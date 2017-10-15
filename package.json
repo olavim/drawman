@@ -209,10 +209,12 @@
   },
   "lint-staged": {
     "gitDir": "./",
-    "*.js": [
-      "yarn lint:prettier",
-      "yarn lint:xo",
-      "git add"
-    ]
+    "linters": {
+      "*.js": [
+        "yarn lint:prettier",
+        "yarn lint:xo",
+        "git add"
+      ]
+    }
   }
 }
