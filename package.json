@@ -208,7 +208,7 @@
     }
   },
   "lint-staged": {
-    "./*.js": [
+    "*.js": [
       "yarn lint:prettier",
       "yarn lint:xo",
       "git add"
