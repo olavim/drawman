@@ -1,0 +1,217 @@
+{
+  "name": "drawman",
+  "version": "1.0.0",
+  "description": "Online draw-and-guess game",
+  "main": "lib/server.js",
+  "scripts": {
+    "clean": "rimraf dist",
+    "clean:soft": "rimraf dist/server dist/client/views dist/client/main.*",
+    "build": "better-npm-run compile",
+    "lint": "yarn lint:prettier \"src/**/*.js\" && yarn lint:xo",
+    "lint:prettier": "prettier --use-tabs --no-bracket-spacing --single-quote --print-width 100 --write",
+    "lint:xo": "xo --fix",
+    "start": "better-npm-run start",
+    "start:docker": "better-npm-run start:docker",
+    "start:prod": "better-npm-run start:prod",
+    "dev": "better-npm-run dev",
+    "dev:no-debug": "npm run dev -- --no_debug",
+    "deploy": "better-npm-run deploy",
+    "deploy:dev": "better-npm-run deploy:dev",
+    "deploy:prod": "better-npm-run deploy:prod",
+    "commit": "tuup-commit",
+    "commitmsg": "validate-commit-msg",
+    "precommit": "lint-staged"
+  },
+  "betterScripts": {
+    "compile": {
+      "command": "npm run clean && babel-node bin/compile && babel src/server --out-dir dist/server",
+      "env": {
+        "DEBUG": "drawman:*"
+      }
+    },
+    "dev": {
+      "command": "npm run build && babel-watch -L src/server/index.js",
+      "env": {
+        "NODE_ENV": "development",
+        "HOT": "true",
+        "DEBUG": "drawman:*"
+      }
+    },
+    "deploy": {
+      "command": "npm run build",
+      "env": {
+        "DEBUG": "drawman:*"
+      }
+    },
+    "deploy:dev": {
+      "command": "npm run deploy",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "drawman:*"
+      }
+    },
+    "deploy:prod": {
+      "command": "npm run deploy",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    "start": {
+      "command": "nodemon --watch dist dist/server/index.js",
+      "env": {
+        "DEBUG": "drawman:*"
+      }
+    },
+    "start:prod": {
+      "command": "nodemon --watch dist dist/server/index.js",
+      "env": {
+        "DEBUG": "drawman:*",
+        "NODE_ENV": "production"
+      }
+    },
+    "start:docker": {
+      "command": "node dist/server/index.js",
+      "env": {
+        "DEBUG": "drawman:*",
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tilastokeskus/drawman.git"
+  },
+  "author": "Olavi Mustanoja",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tilastokeskus/drawman/issues"
+  },
+  "homepage": "https://github.com/tilastokeskus/drawman#readme",
+  "dependencies": {
+    "autoprefixer": "^6.3.6",
+    "axios": "^0.16.1",
+    "css-loader": "^0.23.1",
+    "cssnano": "^3.7.1",
+    "debug": "^3.1.0",
+    "dotenv": "^4.0.0",
+    "ejs": "^2.5.6",
+    "eslint-plugin-react": "^7.0.1",
+    "express": "^4.14.0",
+    "fs-extra": "^0.30.0",
+    "html-loader": "^0.4.5",
+    "ip": "^1.1.3",
+    "lodash": "^4.17.4",
+    "node-sass": "^3.8.0",
+    "object-diff": "^0.0.4",
+    "postcss": "^5.0.21",
+    "postcss-loader": "^0.9.1",
+    "precss": "^1.4.0",
+    "prop-types": "^15.5.10",
+    "react": "^15.5.4",
+    "react-deep-force-update": "^2.0.1",
+    "react-dom": "^15.1.0",
+    "react-redux": "^5.0.4",
+    "react-router": "^4.1.1",
+    "react-router-dom": "^4.1.1",
+    "react-tap-event-plugin": "^2.0.1",
+    "redbox-react": "^1.3.6",
+    "sass-loader": "^3.2.1",
+    "style-loader": "^0.13.1",
+    "yargs": "^4.7.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.10.1",
+    "babel-core": "^6.9.1",
+    "babel-eslint": "^7.2.3",
+    "babel-loader": "^6.2.4",
+    "babel-plugin-transform-runtime": "^6.9.0",
+    "babel-polyfill": "^6.9.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-es2015-node6": "^0.4.0",
+    "babel-preset-es2016": "^6.16.0",
+    "babel-preset-es2017": "^6.16.0",
+    "babel-preset-react": "^6.5.0",
+    "babel-preset-react-optimize": "^1.0.1",
+    "babel-preset-stage-1": "^6.5.0",
+    "babel-register": "^6.9.0",
+    "babel-watch": "^2.0.6",
+    "better-npm-run": "0.0.9",
+    "eslint-config-xo-react": "^0.12.0",
+    "eslint-plugin-react-filenames": "^0.0.2",
+    "html-webpack-plugin": "^2.21.0",
+    "husky": "^0.13.3",
+    "lint-staged": "^4.2.1",
+    "rimraf": "^2.5.2",
+    "validate-commit-msg": "^2.12.1",
+    "webpack": "^2.5.1",
+    "webpack-dev-middleware": "^1.6.1",
+    "webpack-hot-middleware": "^2.10.0",
+    "xo": "^0.18.2"
+  },
+  "xo": {
+    "extends": "xo-react",
+    "parser": "babel-eslint",
+    "plugins": [
+      "react"
+    ],
+    "envs": [
+      "node",
+      "browser"
+    ],
+    "globals": [
+      "__DEV__",
+      "JSON_API_URL",
+      "AUTH_URL"
+    ],
+    "rules": {
+      "react/forbid-component-props": 0,
+      "react/jsx-closing-bracket-location": [
+        "error",
+        "tag-aligned"
+      ]
+    },
+    "overrides": [
+      {
+        "files": "src/client/components/*.js",
+        "rules": {
+          "unicorn/filename-case": [
+            "error",
+            {
+              "case": "pascalCase"
+            }
+          ]
+        }
+      },
+      {
+        "files": "src/client/containers/*.js",
+        "rules": {
+          "unicorn/filename-case": [
+            "error",
+            {
+              "case": "pascalCase"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "config": {
+    "tuup/tools": {
+      "pkg": {
+        "_defV": 8
+      }
+    },
+    "validate-commit-msg": {
+      "maxSubjectLength": 80,
+      "subjectPattern": "^[^A-Z].*[^\\.]$",
+      "subjectPatternErrorMsg": "Commit subject starts with no capitalisation and ends with no dot"
+    }
+  },
+  "lint-staged": {
+    "./*.js": [
+      "yarn lint:prettier",
+      "yarn lint:xo",
+      "git add"
+    ]
+  }
+}
