@@ -7,7 +7,7 @@ const titlePrefix = {
 	production: ''
 };
 
-export default config => {
+export default (config, words) => {
 	const router = new express.Router();
 
 	router.get('/', (req, res) => {

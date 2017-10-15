@@ -1,3 +1,4 @@
+import fs from 'fs';
 import express from 'express';
 import _debug from 'debug';
 import routes from './routes';
@@ -7,11 +8,16 @@ const debug = _debug('drawman:server:app');
 
 export default (config, webpackConfig) => {
 	const paths = config.utilsPaths;
+
+	debug('Gathering wordlist...');
+	const words = fs.readFileSync(paths.base('data/words.txt')).toString().split('\n');
+	debug(`Read ${words.length} words into memory`);
+
 	const app = express();
 	app.set('view engine', 'ejs');
 	app.set('views', paths.dist('client/views'));
 
-	app.use('/', routes(config));
+	app.use('/', routes(config, words));
 
 	if (config.env === 'development' && config.hot) {
 		debug('Setting up hot environment');
