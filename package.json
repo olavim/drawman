@@ -208,6 +208,7 @@
     }
   },
   "lint-staged": {
+    "gitDir": "./",
     "*.js": [
       "yarn lint:prettier",
       "yarn lint:xo",
