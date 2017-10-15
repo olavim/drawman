@@ -159,9 +159,7 @@
       "browser"
     ],
     "globals": [
-      "__DEV__",
-      "JSON_API_URL",
-      "AUTH_URL"
+      "__DEV__"
     ],
     "rules": {
       "react/forbid-component-props": 0,
@@ -196,11 +194,6 @@
     ]
   },
   "config": {
-    "tuup/tools": {
-      "pkg": {
-        "_defV": 8
-      }
-    },
     "validate-commit-msg": {
       "maxSubjectLength": 80,
       "subjectPattern": "^[^A-Z].*[^\\.]$",
