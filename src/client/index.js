@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import ErrorReporter from 'redbox-react';
+import {BrowserRouter as Router, Route} from 'react-router-dom';
 import App from './containers/App';
 
 require('./styles/style.scss'); // eslint-disable-line import/no-unassigned-import
@@ -8,7 +9,15 @@ require('./styles/style.scss'); // eslint-disable-line import/no-unassigned-impo
 const container = document.getElementById('content');
 
 const render = () => {
-	ReactDOM.render(<App/>, container);
+	ReactDOM.render(
+		<Router>
+			<div style={{height: '100%'}}>
+				<Route exact path="/" component={App}/>
+				<Route path="/rooms/:roomId" component={App}/>
+			</div>
+		</Router>,
+		container
+	);
 };
 
 if (__DEV__) {

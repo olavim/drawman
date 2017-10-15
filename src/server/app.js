@@ -1,5 +1,6 @@
 import fs from 'fs';
 import express from 'express';
+import expressWs from 'express-ws';
 import _debug from 'debug';
 import routes from './routes';
 import devMiddleware from './lib/middleware/dev';
@@ -13,7 +14,7 @@ export default (config, webpackConfig) => {
 	const words = fs.readFileSync(paths.base('data/words.txt')).toString().split('\n');
 	debug(`Read ${words.length} words into memory`);
 
-	const app = express();
+	const app = expressWs(express()).app;
 	app.set('view engine', 'ejs');
 	app.set('views', paths.dist('client/views'));
 
