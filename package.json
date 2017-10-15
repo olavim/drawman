@@ -172,7 +172,7 @@
     },
     "overrides": [
       {
-        "files": "src/client/components/*.js",
+        "files": "/**/src/client/components/*.js",
         "rules": {
           "unicorn/filename-case": [
             "error",
@@ -183,7 +183,7 @@
         }
       },
       {
-        "files": "src/client/containers/*.js",
+        "files": "/**/src/client/containers/*.js",
         "rules": {
           "unicorn/filename-case": [
             "error",
