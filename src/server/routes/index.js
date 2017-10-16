@@ -24,7 +24,6 @@ export default (config, words) => {
 	router.ws('/', ws => {
 		ws.on('message', data => {
 			const msg = JSON.parse(data);
-			console.log(msg.type);
 
 			switch (msg.type) {
 				case 'room-request':
@@ -32,6 +31,9 @@ export default (config, words) => {
 					break;
 				case 'join-request':
 					handleJoinRequest(game, ws, msg);
+					break;
+				case 'guess':
+					handleGuess(game, ws, msg);
 					break;
 				default:
 					break;
@@ -41,7 +43,7 @@ export default (config, words) => {
 		ws.on('close', () => {
 			game.removePlayer(ws);
 			game.broadcast(ws.roomId, {
-				type: 'broadcast-state',
+				type: 'state',
 				room: game.getRoom(ws.roomId)
 			});
 		});
@@ -71,7 +73,7 @@ function handleJoinRequest(game, ws, msg) {
 		const playerName = msg.playerName || `guest-${shortid.generate()}`;
 		game.addPlayer(ws, msg.roomId, playerName);
 		game.broadcast(msg.roomId, {
-			type: 'broadcast-state',
+			type: 'state',
 			room: game.getRoom(msg.roomId)
 		});
 
@@ -90,4 +92,16 @@ function handleJoinRequest(game, ws, msg) {
 			})
 		);
 	}
+}
+
+function handleGuess(game, ws, msg) {
+	game.broadcast(ws.roomId, {
+		type: 'log',
+		log: {
+			timestamp: Date.now(),
+			type: 'player',
+			playerName: ws.id,
+			text: msg.guess
+		}
+	});
 }
