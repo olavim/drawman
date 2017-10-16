@@ -1,19 +1,111 @@
 import React from 'react';
 import {fabric} from 'fabric';
+import {CirclePicker} from 'react-color';
 
 const style = {
+	root: {
+		display: 'flex',
+		flexDirection: 'row'
+	},
+	canvasContainer: {
+		root: {
+			display: 'flex',
+			flexDirection: 'column',
+			position: 'relative'
+		}
+	},
 	brushControl: {
 		root: {
 			display: 'flex',
-			padding: '5px',
-			alignItems: 'center'
+			padding: '25px 5px 0 5px',
+			alignItems: 'center',
+			justifyContent: 'center',
+			flexDirection: 'column'
+		},
+		size: {
+			display: 'flex',
+			padding: '20px 0',
+			alignItems: 'center',
+			justifyContent: 'center',
+			flexDirection: 'column'
+		}
+	},
+	tools: {
+		root: {
+			display: 'flex',
+			flexDirection: 'column'
+		},
+		button: {
+			inactive: {
+				border: '1px solid #ddd',
+				borderRadius: '4px',
+				marginLeft: '8px',
+				marginBottom: '8px',
+				padding: '10px 15px',
+				backgroundColor: '#fff',
+				cursor: 'pointer',
+				width: '80px'
+			},
+			active: {
+				border: 'none',
+				borderRadius: '4px',
+				marginLeft: '8px',
+				marginBottom: '8px',
+				padding: '10px 15px',
+				backgroundColor: '#68bc00',
+				color: '#fff',
+				fontWeight: 'bold',
+				cursor: 'default',
+				outline: 'none',
+				width: '80px'
+			}
 		}
 	}
 };
 
+const colors = [
+	'#000000',
+	'#4D4D4D',
+	'#666666',
+	'#808080',
+	'#999999',
+	'#B3B3B3',
+	'#cccccc',
+	'#9F0500',
+	'#D33115',
+	'#F44E3B',
+	'#C45100',
+	'#E27300',
+	'#FE9200',
+	'#FB9E00',
+	'#FCC400',
+	'#FCDC00',
+	'#808900',
+	'#B0BC00',
+	'#DBDF00',
+	'#194D33',
+	'#68BC00',
+	'#A4DD00',
+	'#0C797D',
+	'#16A5A5',
+	'#68CCCA',
+	'#0062B1',
+	'#009CE0',
+	'#73D8FF',
+	'#653294',
+	'#7B64FF',
+	'#AEA1FF',
+	'#AB149E',
+	'#FA28FF',
+	'#FDA1FF'
+];
+
 export default class extends React.Component {
 	state = {
-		fillColor: '#000',
+		fillColor: {
+			rgb: {r: 0, g: 0, b: 0, a: 255},
+			hex: '#000000'
+		},
 		brushSize: 5
 	};
 
@@ -64,17 +156,36 @@ export default class extends React.Component {
 		this.canvas.isDrawingMode = true;
 		const mouseCursor = this.mouseCursor;
 		this.cursor.add(mouseCursor);
+		this.mouseCursor
+			.set({
+				fill: this.state.fillColor.hex,
+				radius: this.state.brushSize / 2
+			})
+			.setCoords()
+			.canvas.renderAll();
 
 		this.canvas.off('mouse:down');
 
 		this.canvas.on('mouse:move', function (evt) {
 			const mouse = this.getPointer(evt.e);
-			mouseCursor.set({top: mouse.y, left: mouse.x}).setCoords().canvas.renderAll();
+			mouseCursor
+				.set({
+					top: mouse.y,
+					left: mouse.x
+				})
+				.setCoords()
+				.canvas.renderAll();
 		});
 
 		this.canvas.on('mouse:out', () => {
 			mouseCursor.set({top: -100, left: -100}).setCoords().canvas.renderAll();
 		});
+
+		this.canvas.on('mouse:up', () => {
+			this.removeAntialias();
+		});
+
+		this.forceUpdate();
 	};
 
 	handleSetBucket = () => {
@@ -84,6 +195,7 @@ export default class extends React.Component {
 		this.cursor.remove(this.mouseCursor);
 		this.canvas.off('mouse:move');
 		this.canvas.off('mouse:out');
+		this.canvas.off('mouse:up');
 
 		const canvas = document.getElementById('canvas');
 		const ctx = canvas.getContext('2d');
@@ -99,7 +211,14 @@ export default class extends React.Component {
 			const imageData = ctx.getImageData(0, 0, width, height);
 			const pixelStack = [[mx, my]];
 
-			const curColor = {r: 0, g: 0, b: 0, a: 255};
+			const pp = (my * width + mx) * 4; // eslint-disable-line no-mixed-operators
+			const startColor = {
+				r: imageData.data[pp],
+				g: imageData.data[pp + 1],
+				b: imageData.data[pp + 2],
+				a: imageData.data[pp + 3]
+			};
+			const curColor = self.state.fillColor.rgb;
 
 			while (pixelStack.length) {
 				const newPos = pixelStack.pop();
@@ -162,7 +281,7 @@ export default class extends React.Component {
 				const b = imageData.data[pixelPos + 2];
 				const a = imageData.data[pixelPos + 3];
 
-				return !(r === curColor.r && g === curColor.g && b === curColor.b && a === curColor.a);
+				return r === startColor.r && g === startColor.g && b === startColor.b && a === startColor.a;
 			}
 
 			function colorPixel(pixelPos) {
@@ -172,39 +291,105 @@ export default class extends React.Component {
 				imageData.data[pixelPos + 3] = curColor.a;
 			}
 		});
+
+		this.forceUpdate();
+	};
+
+	removeAntialias = () => {
+		const canvas = document.getElementById('canvas');
+		const ctx = canvas.getContext('2d');
+		const imageData = ctx.getImageData(0, 0, 800, 600);
+
+		for (let i = 0; i < 800; i++) {
+			for (let j = 0; j < 600; j++) {
+				const pp = (j * 800 + i) * 4; // eslint-disable-line no-mixed-operators
+				if (imageData.data[pp + 3] !== 0) {
+					imageData.data[pp + 3] = imageData.data[pp + 3] >= 128 ? 255 : 0;
+				}
+			}
+		}
+
+		ctx.putImageData(imageData, 0, 0);
+
+		fabric.Image.fromURL(canvas.toDataURL(), img => {
+			this.canvas.clear();
+			this.canvas.add(img);
+			this.canvas.renderAll();
+		});
 	};
 
 	handleClearCanvas = () => {
 		this.canvas.clear();
 	};
 
+	handleChangeColor = color => {
+		color.rgb.a *= 255;
+		this.setState({fillColor: color}, () => {
+			console.log(this.state.fillColor);
+			this.canvas.freeDrawingBrush.color = color.hex;
+			if (this.canvas.isDrawingMode) {
+				this.mouseCursor.set({fill: color.hex}).setCoords().canvas.renderAll();
+			}
+			this.brushCircle.set({fill: color.hex}).setCoords().canvas.renderAll();
+		});
+	};
+
 	handleChangeBrushSize = evt => {
 		const val = evt.target.value;
 		this.setState({brushSize: val});
-		this.mouseCursor.set({radius: val / 2}).setCoords().canvas.renderAll();
+		if (this.canvas.isDrawingMode) {
+			this.mouseCursor.set({radius: val / 2}).setCoords().canvas.renderAll();
+		}
 		this.brushCircle.set({radius: val / 2}).setCoords().canvas.renderAll();
 		this.canvas.freeDrawingBrush.width = val;
 	};
 
 	render() {
+		const pencil = this.canvas ? this.canvas.isDrawingMode : true;
+
 		return (
-			<div style={{position: 'relative'}}>
-				<canvas style={{border: '1px solid #000', position: 'absolute'}} id="canvas"/>
-				<canvas id="cursor" style={{position: 'absolute', top: '0', pointerEvents: 'none'}}/>
-				<div style={style.brushControl.root}>
-					<input
-						type="range"
-						min="1"
-						max="40"
-						step="1"
-						value={this.state.brushSize}
-						onChange={this.handleChangeBrushSize}
-					/>
-					<canvas id="brush"/>
+			<div style={style.root}>
+				<div style={style.canvasContainer.root}>
+					<canvas id="canvas" style={{border: '1px solid #000', position: 'absolute'}}/>
+					<canvas id="cursor" style={{position: 'absolute', top: '0', pointerEvents: 'none'}}/>
+					<div style={style.brushControl.root}>
+						<CirclePicker
+							colors={colors}
+							color={this.state.fillColor}
+							width={720}
+							onChange={this.handleChangeColor}
+						/>
+						<div style={style.brushControl.size}>
+							<input
+								type="range"
+								min="2"
+								max="40"
+								step="1"
+								value={this.state.brushSize}
+								onChange={this.handleChangeBrushSize}
+								style={{marginBottom: '10px', width: '250px'}}
+							/>
+							<canvas id="brush"/>
+						</div>
+					</div>
 				</div>
-				<button onClick={this.handleSetPencil}>pencil</button>
-				<button onClick={this.handleSetBucket}>bucket</button>
-				<button onClick={this.handleClearCanvas}>clear</button>
+				<div style={style.tools.root}>
+					<button
+						onClick={this.handleSetPencil}
+						style={style.tools.button[pencil ? 'active' : 'inactive']}
+					>
+						pencil
+					</button>
+					<button
+						onClick={this.handleSetBucket}
+						style={style.tools.button[pencil ? 'inactive' : 'active']}
+					>
+						bucket
+					</button>
+					<button onClick={this.handleClearCanvas} style={style.tools.button.inactive}>
+						clear
+					</button>
+				</div>
 			</div>
 		);
 	}

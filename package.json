@@ -110,6 +110,7 @@
     "precss": "^1.4.0",
     "prop-types": "^15.5.10",
     "react": "^15.5.4",
+    "react-color": "^2.13.8",
     "react-deep-force-update": "^2.0.1",
     "react-dom": "^15.1.0",
     "react-redux": "^5.0.4",
@@ -171,8 +172,19 @@
         "error",
         "tag-aligned"
       ],
-      "react/jsx-no-bind": ["error", {"ignoreRefs": true}],
-      "no-extra-parens": ["error", "all", {"nestedBinaryExpressions": false}]
+      "react/jsx-no-bind": [
+        "error",
+        {
+          "ignoreRefs": true
+        }
+      ],
+      "no-extra-parens": [
+        "error",
+        "all",
+        {
+          "nestedBinaryExpressions": false
+        }
+      ]
     },
     "overrides": [
       {
