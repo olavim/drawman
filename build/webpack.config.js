@@ -86,7 +86,7 @@ webpackConfig.module.rules = [
 		loader: 'babel-loader',
 		query: {
 			cacheDirectory: true,
-			plugins: ['transform-runtime'],
+			plugins: ['transform-runtime', 'babel-plugin-styled-components'],
 			presets: ['es2015-node6/object-rest', 'es2016', 'es2017', 'stage-1', 'react'],
 			env: {production: {presets: ['react-optimize']}}
 		}

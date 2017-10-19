@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {fabric} from 'fabric';
 import {CirclePicker} from 'react-color';
 
@@ -109,6 +110,13 @@ export default class extends React.Component {
 		brushSize: 5
 	};
 
+	static propTypes = {
+		showControls: PropTypes.bool.isRequired,
+		canvasData: PropTypes.object.isRequired,
+		onDataChanged: PropTypes.func.isRequired,
+		overlay: PropTypes.any.isRequired
+	};
+
 	componentDidMount() {
 		fabric.Object.prototype.selectable = false;
 
@@ -116,28 +124,17 @@ export default class extends React.Component {
 			freeDrawingCursor: 'none'
 		});
 
+		const brushRadius = this.state.brushSize / 2;
+
 		this.canvas.freeDrawingBrush.color = this.state.fillColor;
 		this.canvas.freeDrawingBrush.width = this.state.brushSize;
+		this.canvas.selection = false;
 		this.canvas.setWidth(800);
 		this.canvas.setHeight(600);
 
 		this.cursor = new fabric.StaticCanvas('cursor');
 		this.cursor.setWidth(800);
 		this.cursor.setHeight(600);
-
-		this.brushPreview = new fabric.StaticCanvas('brush');
-		this.brushPreview.setWidth(50);
-		this.brushPreview.setHeight(50);
-		const brushRadius = this.state.brushSize / 2;
-		this.brushCircle = new fabric.Circle({
-			left: 25 - brushRadius,
-			top: 25 - brushRadius,
-			radius: brushRadius,
-			fill: 'black',
-			originX: 'center',
-			originY: 'center'
-		});
-		this.brushPreview.add(this.brushCircle);
 
 		this.mouseCursor = new fabric.Circle({
 			left: -100,
@@ -148,15 +145,56 @@ export default class extends React.Component {
 			originX: 'center',
 			originY: 'center'
 		});
-
-		this.handleSetPencil();
 	}
+
+	componentDidUpdate(prevProps) {
+		if (!this.props.showControls) {
+			this.canvas.loadFromJSON(this.props.canvasData, this.canvas.renderAll.bind(this.canvas));
+		}
+
+		if (!prevProps.showControls && this.props.showControls) {
+			this.canvas.on('after:render', () => {
+				this.props.onDataChanged(this.canvas.toJSON());
+			});
+
+			this.canvas.clear();
+			this.brushPreview = new fabric.StaticCanvas('brush');
+			this.brushPreview.setWidth(50);
+			this.brushPreview.setHeight(50);
+			const brushRadius = this.state.brushSize / 2;
+			this.brushCircle = new fabric.Circle({
+				left: 25 - brushRadius,
+				top: 25 - brushRadius,
+				radius: brushRadius,
+				fill: 'black',
+				originX: 'center',
+				originY: 'center'
+			});
+			this.brushPreview.add(this.brushCircle);
+			this.handleSetPencil();
+		} else if (prevProps.showControls && !this.props.showControls) {
+			this.resetAndLockCanvas();
+		}
+	}
+
+	resetAndLockCanvas = () => {
+		this.canvas.off('mouse:up');
+		this.canvas.off('mouse:down');
+		this.canvas.off('mouse:move');
+		this.canvas.off('mouse:out');
+		this.canvas.off('after:render');
+
+		this.canvas.isDrawingMode = false;
+		this.canvas.hoverCursor = 'default';
+		this.cursor.remove(this.mouseCursor);
+		this.canvas.clear();
+	};
 
 	handleSetPencil = () => {
 		this.canvas.isDrawingMode = true;
 		const mouseCursor = this.mouseCursor;
 		this.cursor.add(mouseCursor);
-		this.mouseCursor
+		mouseCursor
 			.set({
 				fill: this.state.fillColor.hex,
 				radius: this.state.brushSize / 2
@@ -201,6 +239,10 @@ export default class extends React.Component {
 		const ctx = canvas.getContext('2d');
 
 		this.canvas.on('mouse:down', function (evt) {
+			if (!self.props.showControls) {
+				return;
+			}
+
 			const mouse = this.getPointer(evt.e);
 			const mx = parseInt(mouse.x, 10);
 			const my = parseInt(mouse.y, 10);
@@ -325,7 +367,6 @@ export default class extends React.Component {
 	handleChangeColor = color => {
 		color.rgb.a *= 255;
 		this.setState({fillColor: color}, () => {
-			console.log(this.state.fillColor);
 			this.canvas.freeDrawingBrush.color = color.hex;
 			if (this.canvas.isDrawingMode) {
 				this.mouseCursor.set({fill: color.hex}).setCoords().canvas.renderAll();
@@ -346,50 +387,54 @@ export default class extends React.Component {
 
 	render() {
 		const pencil = this.canvas ? this.canvas.isDrawingMode : true;
+		const {showControls, overlay} = this.props;
 
 		return (
 			<div style={style.root}>
 				<div style={style.canvasContainer.root}>
+					{overlay}
 					<canvas id="canvas" style={{border: '1px solid #000', position: 'absolute'}}/>
 					<canvas id="cursor" style={{position: 'absolute', top: '0', pointerEvents: 'none'}}/>
-					<div style={style.brushControl.root}>
-						<CirclePicker
-							colors={colors}
-							color={this.state.fillColor}
-							width={720}
-							onChange={this.handleChangeColor}
-						/>
-						<div style={style.brushControl.size}>
-							<input
-								type="range"
-								min="2"
-								max="40"
-								step="1"
-								value={this.state.brushSize}
-								onChange={this.handleChangeBrushSize}
-								style={{marginBottom: '10px', width: '250px'}}
+					{showControls &&
+						<div style={style.brushControl.root}>
+							<CirclePicker
+								colors={colors}
+								color={this.state.fillColor}
+								width={720}
+								onChange={this.handleChangeColor}
 							/>
-							<canvas id="brush"/>
-						</div>
-					</div>
+							<div style={style.brushControl.size}>
+								<input
+									type="range"
+									min="2"
+									max="40"
+									step="1"
+									value={this.state.brushSize}
+									onChange={this.handleChangeBrushSize}
+									style={{marginBottom: '10px', width: '250px'}}
+								/>
+								<canvas id="brush"/>
+							</div>
+						</div>}
 				</div>
-				<div style={style.tools.root}>
-					<button
-						onClick={this.handleSetPencil}
-						style={style.tools.button[pencil ? 'active' : 'inactive']}
-					>
-						pencil
-					</button>
-					<button
-						onClick={this.handleSetBucket}
-						style={style.tools.button[pencil ? 'inactive' : 'active']}
-					>
-						bucket
-					</button>
-					<button onClick={this.handleClearCanvas} style={style.tools.button.inactive}>
-						clear
-					</button>
-				</div>
+				{showControls &&
+					<div style={style.tools.root}>
+						<button
+							onClick={this.handleSetPencil}
+							style={style.tools.button[pencil ? 'active' : 'inactive']}
+						>
+							pencil
+						</button>
+						<button
+							onClick={this.handleSetBucket}
+							style={style.tools.button[pencil ? 'inactive' : 'active']}
+						>
+							bucket
+						</button>
+						<button onClick={this.handleClearCanvas} style={style.tools.button.inactive}>
+							clear
+						</button>
+					</div>}
 			</div>
 		);
 	}

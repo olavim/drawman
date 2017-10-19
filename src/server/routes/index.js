@@ -35,17 +35,22 @@ export default (config, words) => {
 				case 'guess':
 					handleGuess(game, ws, msg);
 					break;
+				case 'canvas-data':
+					handleCanvasData(game, ws, msg);
+					break;
+				case 'start-request':
+					handleStartGame(game, ws, msg);
+					break;
+				case 'word-request':
+					handleWordChosen(game, ws, msg);
+					break;
 				default:
 					break;
 			}
 		});
 
 		ws.on('close', () => {
-			game.removePlayer(ws);
-			game.broadcast(ws.roomId, {
-				type: 'state',
-				room: game.getRoom(ws.roomId)
-			});
+			game.removePlayer(ws.roomId, ws.id);
 		});
 	});
 
@@ -72,10 +77,6 @@ function handleJoinRequest(game, ws, msg) {
 	try {
 		const playerName = msg.playerName || `guest-${shortid.generate()}`;
 		game.addPlayer(ws, msg.roomId, playerName);
-		game.broadcast(msg.roomId, {
-			type: 'state',
-			room: game.getRoom(msg.roomId)
-		});
 
 		ws.send(
 			JSON.stringify({
@@ -95,13 +96,28 @@ function handleJoinRequest(game, ws, msg) {
 }
 
 function handleGuess(game, ws, msg) {
-	game.broadcast(ws.roomId, {
-		type: 'log',
-		log: {
-			timestamp: Date.now(),
-			type: 'player',
-			playerName: ws.id,
-			text: msg.guess
-		}
-	});
+	game.handleGuess(ws.roomId, ws.id, msg.guess);
+}
+
+function handleCanvasData(game, ws, msg) {
+	const room = game.getRoom(ws.roomId);
+	const drawer = room.players.find(p => p.isDrawer);
+	if (drawer.name === ws.id) {
+		game.handleCanvasData(ws.roomId, msg.data);
+	}
+}
+
+function handleStartGame(game, ws) {
+	const room = game.getRoom(ws.roomId);
+	if (room.players[0].name === ws.id) {
+		game.startGameInRoom(ws.roomId);
+	}
+}
+
+function handleWordChosen(game, ws, msg) {
+	const room = game.getRoom(ws.roomId);
+	const drawer = room.players.find(p => p.isDrawer);
+	if (drawer.name === ws.id) {
+		game.stateDrawing(ws.roomId, msg.word);
+	}
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Canvas from '../components/Canvas';
+import WordButton from '../components/WordButton';
 
 const style = {
 	root: {
@@ -45,10 +46,20 @@ const style = {
 			display: 'flex',
 			flexDirection: 'column',
 			borderRight: '1px solid #444',
-			width: '150px'
+			width: '150px',
+			padding: '20px 0'
 		},
 		listElement: {
-			padding: '10px 50px 10px 20px'
+			root: {
+				padding: '10px 50px 10px 20px',
+				textAlign: 'center'
+			},
+			name: {
+				fontWeight: 'bold'
+			},
+			score: {
+				fontSize: '12px'
+			}
 		}
 	},
 	button: {
@@ -116,6 +127,29 @@ const style = {
 				wordBreak: 'break-all'
 			}
 		}
+	},
+	overlay: {
+		root: {
+			zIndex: 99,
+			position: 'absolute',
+			top: 0,
+			width: '802px',
+			height: '602px',
+			display: 'flex',
+			justifyContent: 'center',
+			alignItems: 'center',
+			backgroundColor: 'rgba(50, 80, 120, 1)',
+			color: '#ddd'
+		},
+		wordChoiceContainer: {
+			root: {
+				display: 'flex',
+				flex: 1,
+				width: '100%',
+				flexWrap: 'wrap',
+				justifyContent: 'space-around'
+			}
+		}
 	}
 };
 
@@ -123,7 +157,8 @@ const MessageType = {
 	JOIN_ANSWER: 'join-answer',
 	ROOM_ANSWER: 'room-answer',
 	STATE_UPDATE: 'state',
-	LOG: 'log'
+	LOG: 'log',
+	CHOOSE_WORD: 'choose-word'
 };
 
 export default class extends React.Component {
@@ -132,7 +167,8 @@ export default class extends React.Component {
 		guess: '',
 		ws: null,
 		room: null,
-		chatLogs: []
+		chatLogs: [],
+		wordChoices: []
 	};
 
 	static propTypes = {
@@ -141,6 +177,10 @@ export default class extends React.Component {
 				roomId: PropTypes.string
 			}).isRequired
 		}).isRequired
+	};
+
+	sendMessage = msg => {
+		this.state.ws.send(JSON.stringify(msg));
 	};
 
 	handleNameChange = evt => {
@@ -154,13 +194,7 @@ export default class extends React.Component {
 	handleGuessKeyDown = evt => {
 		if (evt.keyCode === 13) {
 			// Enter
-			this.state.ws.send(
-				JSON.stringify({
-					type: 'guess',
-					guess: this.state.guess
-				})
-			);
-
+			this.sendMessage({type: 'guess', guess: this.state.guess});
 			this.setState({guess: ''});
 		}
 	};
@@ -180,20 +214,9 @@ export default class extends React.Component {
 		this.setState({ws}, () => {
 			ws.onopen = () => {
 				if (roomId) {
-					ws.send(
-						JSON.stringify({
-							type: 'join-request',
-							playerName: this.state.name,
-							roomId
-						})
-					);
+					this.sendMessage({type: 'join-request', playerName: this.state.name, roomId});
 				} else {
-					ws.send(
-						JSON.stringify({
-							type: 'room-request',
-							playerName: this.state.name
-						})
-					);
+					this.sendMessage({type: 'room-request', playerName: this.state.name});
 				}
 			};
 
@@ -212,6 +235,7 @@ export default class extends React.Component {
 					}
 					case MessageType.STATE_UPDATE: {
 						this.setState({room: msg.room});
+						console.log(msg.room.state);
 						break;
 					}
 					case MessageType.LOG: {
@@ -223,6 +247,10 @@ export default class extends React.Component {
 								this.chat.scrollTop = this.chat.scrollHeight - this.chat.clientHeight;
 							}
 						});
+						break;
+					}
+					case MessageType.CHOOSE_WORD: {
+						this.setState({wordChoices: msg.words});
 						break;
 					}
 					default: {
@@ -251,9 +279,80 @@ export default class extends React.Component {
 		}
 	};
 
+	handleStartGame = () => {
+		this.sendMessage({type: 'start-request'});
+	};
+
+	handleChooseWord = word => {
+		this.sendMessage({type: 'word-request', word});
+	};
+
+	handleCanvasDataChanged = data => {
+		this.sendMessage({type: 'canvas-data', data});
+	};
+
+	getOverlay = () => {
+		const {room, name, wordChoices} = this.state;
+		const drawingPlayer = room.players.find(p => p.isDrawer);
+
+		if (room.state === 'start-of-round') {
+			return (
+				<div style={style.overlay.root}>
+					<span>Round {room.round}</span>
+				</div>
+			);
+		}
+
+		if (room.state === 'choosing-word') {
+			return (
+				<div style={style.overlay.root}>
+					{drawingPlayer.name === name ?
+						<div style={style.overlay.wordChoiceContainer.root}>
+							{wordChoices.map(word =>
+								<WordButton key={word} onClick={this.handleChooseWord} word={word}/>
+								)}
+						</div> :
+						<span>{drawingPlayer.name} is choosing a word</span>}
+				</div>
+			);
+		}
+
+		if (room.state === 'end-of-turn') {
+			return (
+				<div style={style.overlay.root}>
+					<span>End of turn</span>
+				</div>
+			);
+		}
+
+		if (room.state === 'show-turn-score') {
+			return (
+				<div style={style.overlay.root}>
+					<span>Turn scores</span>
+				</div>
+			);
+		}
+
+		if (room.state === 'show-game-score') {
+			return (
+				<div style={style.overlay.root}>
+					<span>Scores</span>
+				</div>
+			);
+		}
+
+		return null;
+	};
+
 	render() {
 		const {room, name, guess, chatLogs} = this.state;
 		const {roomId} = this.props.match.params;
+
+		const isDrawing =
+			room && room.state === 'drawing' && room.players.find(p => p.name === name).isDrawer;
+
+		const owner = room ? room.players[0] : {};
+		const isOwner = name === owner.name;
 		return (
 			<div style={style.root}>
 				{room === null ?
@@ -274,14 +373,28 @@ export default class extends React.Component {
 							<div style={style.playerList.root}>
 								{room.players.map(p => {
 									return (
-										<div key={p.name} style={style.playerList.listElement}>
-											{p.name}
+										<div key={p.name} style={style.playerList.listElement.root}>
+											<div style={style.playerList.listElement.name}>
+												{p.name}
+											</div>
+											<div style={style.playerList.listElement.score}>
+													Score: {p.score.total}
+											</div>
 										</div>
 									);
 								})}
 							</div>
 							<div style={style.gameArea.root}>
-								<Canvas/>
+								{room.state === 'inactive' ?
+										isOwner ?
+											<button onClick={this.handleStartGame}>Start Game</button> :
+											<span>Waiting for {owner.name} to start the game</span> :
+											<Canvas
+												canvasData={room.canvasData}
+												showControls={isDrawing}
+												overlay={this.getOverlay()}
+												onDataChanged={this.handleCanvasDataChanged}
+											/>}
 							</div>
 							<div style={style.chat.root}>
 								<div
@@ -296,7 +409,8 @@ export default class extends React.Component {
 										});
 										return (
 											<div key={log.timestamp} style={rootStyle}>
-												<div style={style.chat.log.playerName}>{log.playerName}:</div>
+												{log.type === 'player' &&
+												<div style={style.chat.log.playerName}>{log.playerName}:</div>}
 												<div style={style.chat.log.text}>{log.text}</div>
 											</div>
 										);

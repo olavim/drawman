@@ -1,5 +1,47 @@
 import shortid from 'shortid';
 import _ from 'lodash';
+import schedule from 'node-schedule';
+
+const State = {
+	INACTIVE: 'inactive',
+	START_OF_ROUND: 'start-of-round',
+	CHOOSING_WORD: 'choosing-word',
+	DRAWING: 'drawing',
+	END_OF_TURN: 'end-of-turn',
+	SHOW_TURN_SCORE: 'show-turn-score',
+	SHOW_GAME_SCORE: 'show-game-score'
+};
+
+// Const StateDuration = { // Seconds.
+// 	START_OF_ROUND: 2,
+// 	CHOOSING_WORD: 15,
+// 	DRAWING: 120,
+// 	END_OF_TURN: 2,
+// 	SHOW_TURN_SCORE: 5
+// };
+const StateDuration = {
+	// Seconds.
+	START_OF_ROUND: 2,
+	CHOOSING_WORD: 500,
+	DRAWING: 60,
+	END_OF_TURN: 2,
+	SHOW_TURN_SCORE: 2
+};
+
+const roomBase = {
+	round: 1, // Current round.
+	maxRounds: 3, // Max rounds.
+	players: [], // Connected players.
+	canvasData: null,
+	currentWord: null, // Word being drawn.
+	state: State.INACTIVE,
+	/* Time when the game's state changes next. Present at least when we want
+	 * clients to show a countdown clock.
+	 */
+	stateEndTime: null,
+	stateSchedule: null,
+	wordChoices: null // Words from which the drawer chooses a word to draw.
+};
 
 export default class {
 	constructor(words) {
@@ -7,25 +49,45 @@ export default class {
 		this.rooms = [];
 	}
 
-	createRoom = () => {
-		const roomId = shortid.generate();
-		this.rooms[roomId] = {
-			id: roomId,
-			active: false,
-			round: 0,
-			maxRounds: 3,
-			players: [],
-			canvasData: null,
-			currentWord: null
-		};
+	createRoom = (maxRounds = 3) => {
+		const id = shortid.generate();
+		this.rooms[id] = Object.assign({}, roomBase, {id, maxRounds});
+		return id;
+	};
 
-		return roomId;
+	error = (client, text) => {
+		this.messageClient(client, {type: 'error', error: text});
+	};
+
+	messageClient = (client, message) => {
+		if (client) {
+			client.send(JSON.stringify(message), err => {
+				if (err) {
+					console.log('Failed to send a message to a client: ' + err.message);
+				}
+			});
+		}
+	};
+
+	broadcast = (roomId, msg) => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			for (const player of room.players) {
+				this.messageClient(player.client, msg);
+			}
+		}
 	};
 
 	addPlayer = (client, roomId, name) => {
 		const room = this.rooms[roomId];
+
 		if (!room) {
-			throw new Error('No such room');
+			return this.error(client, 'Room does not exist.');
+		}
+
+		if (room.players.find(p => p.name === name)) {
+			return this.error(client, 'Name already taken.');
 		}
 
 		client.roomId = roomId;
@@ -34,36 +96,353 @@ export default class {
 		room.players.push({
 			client,
 			name,
-			drawing: false,
-			score: 0
+			isDrawer: false,
+			score: {
+				total: 0,
+				turn: 0
+			}
+		});
+
+		this.broadcast(roomId, {
+			type: 'state',
+			room: this.getRoom(roomId)
+		});
+
+		this.broadcast(roomId, {
+			type: 'log',
+			log: {
+				timestamp: new Date().toISOString(),
+				type: 'system',
+				text: `Player ${name} joined.`
+			}
 		});
 	};
 
-	removePlayer = client => {
-		const room = this.rooms[client.roomId];
-		const playerIndex = room.players.findIndex(p => p.name === client.id);
-		room.players.splice(playerIndex, 1);
+	removePlayer = (roomId, playerName) => {
+		const room = this.rooms[roomId];
 
-		if (room.players.length === 0) {
-			delete this.rooms[client.roomId];
+		if (room) {
+			const playerIndex = room.players.findIndex(p => p.name === playerName);
+			if (playerIndex !== -1) {
+				room.players.splice(playerIndex, 1);
+			}
+
+			if (room.players.length === 0) {
+				delete this.rooms[roomId];
+				console.log(`Room destroyed. Rooms left: ${this.rooms.length}`);
+			} else {
+				this.broadcast(roomId, {
+					type: 'state',
+					room: this.getRoom(roomId)
+				});
+
+				this.broadcast(roomId, {
+					type: 'log',
+					log: {
+						timestamp: new Date().toISOString(),
+						type: 'system',
+						text: `Player ${playerName} left.`
+					}
+				});
+			}
 		}
 	};
 
 	getRoom = roomId => {
 		const room = _.cloneDeep(this.rooms[roomId]);
+
 		if (room) {
-			room.players.forEach(player => delete player.client);
+			// Hide sensitive and useless data.
+			room.players.forEach(p => delete p.client);
 			delete room.currentWord;
+			delete room.stateSchedule;
+			delete room.wordChoices;
 		}
+
 		return room;
 	};
 
-	broadcast = (roomId, msg) => {
+	setNextDrawer = roomId => {
 		const room = this.rooms[roomId];
+
 		if (room) {
-			for (const player of room.players) {
-				player.client.send(JSON.stringify(msg));
+			const currentDrawerIndex = room.players.findIndex(p => p.isDrawer);
+			if (currentDrawerIndex !== -1) {
+				room.players[currentDrawerIndex].isDrawer = false;
+			}
+
+			const nextDrawerIndex = (currentDrawerIndex + 1) % room.players.length;
+			room.players[nextDrawerIndex].isDrawer = true;
+		}
+	};
+
+	getDrawer = roomId => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			return room.players.find(p => p.isDrawer);
+		}
+
+		return null;
+	};
+
+	startGameInRoom = roomId => {
+		this.stateStartOfRound(roomId);
+	};
+
+	stateStartOfRound = roomId => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			room.state = State.START_OF_ROUND;
+
+			// Reset turn scores.
+			room.players.forEach(p => {
+				p.score.turn = 0;
+			});
+
+			this.scheduleStateChange(roomId, StateDuration.START_OF_ROUND, () => {
+				this.stateChoosingWord(roomId);
+			});
+
+			this.broadcast(roomId, {
+				type: 'state',
+				room: this.getRoom(roomId)
+			});
+		}
+	};
+
+	stateChoosingWord = roomId => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			room.state = State.CHOOSING_WORD;
+
+			this.setNextDrawer(roomId);
+
+			/* Save the word choices so we can validate that the chosen word was indeed
+			 * picked from this list.
+			 */
+			room.wordChoices = this.pickWords(9);
+
+			this.scheduleStateChange(roomId, StateDuration.CHOOSING_WORD, () => {
+				const word = room.wordChoices[0];
+				this.stateDrawing(roomId, word);
+			});
+
+			this.messageClient(this.getDrawer(roomId).client, {
+				type: 'choose-word',
+				words: room.wordChoices
+			});
+
+			this.broadcast(roomId, {
+				type: 'state',
+				room: this.getRoom(roomId)
+			});
+		}
+	};
+
+	stateDrawing(roomId, word) {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			if (!room.wordChoices.includes(word)) {
+				// Probably malicious.
+				return;
+			}
+
+			this.clearRoomSchedules(roomId);
+
+			room.state = State.DRAWING;
+			room.currentWord = word;
+
+			this.scheduleStateChange(roomId, StateDuration.DRAWING, () => this.stateEndOfTurn(roomId));
+
+			this.broadcast(roomId, {
+				type: 'state',
+				room: this.getRoom(roomId)
+			});
+
+			this.messageClient(this.getDrawer(roomId).client, {
+				type: 'draw-word',
+				word
+			});
+		}
+	}
+
+	stateEndOfTurn = roomId => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			this.clearRoomSchedules(roomId);
+
+			room.state = State.END_OF_TURN;
+			room.canvasData = null;
+
+			this.scheduleStateChange(roomId, StateDuration.END_OF_TURN, () => {
+				this.stateShowTurnScore(roomId);
+			});
+
+			this.broadcast(roomId, {
+				type: 'state',
+				room: this.getRoom(roomId)
+			});
+		}
+	};
+
+	stateShowTurnScore = roomId => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			this.clearRoomSchedules(roomId);
+
+			room.state = State.SHOW_TURN_SCORE;
+
+			room.players.forEach(p => {
+				p.score.total += p.score.turn;
+			});
+
+			this.scheduleStateChange(roomId, StateDuration.SHOW_TURN_SCORE, () => {
+				const turn = room.players.findIndex(p => p.isDrawer);
+
+				if (turn === room.players.length - 1) {
+					// Last turn.
+					if (room.round === room.maxRounds) {
+						// Last round.
+						this.stateShowGameScore(roomId);
+					} else {
+						room.round++;
+						this.stateStartOfRound(roomId);
+					}
+				} else {
+					this.stateChoosingWord(roomId);
+				}
+			});
+
+			this.broadcast(roomId, {
+				type: 'state',
+				room: this.getRoom(roomId)
+			});
+
+			room.players.forEach(p => {
+				p.score.turn = 0;
+			});
+		}
+	};
+
+	stateShowGameScore = roomId => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			this.clearRoomSchedules(roomId);
+
+			room.state = State.SHOW_GAME_SCORE;
+
+			this.broadcast(roomId, {
+				type: 'state',
+				room: this.getRoom(roomId)
+			});
+		}
+	};
+
+	clearRoomSchedules(roomId) {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			if (room.stateSchedule !== null) {
+				room.stateSchedule.cancel();
+				room.stateSchedule = null;
+			}
+
+			room.stateEndTime = null;
+		}
+	}
+
+	scheduleStateChange = (roomId, offsetSeconds, fn) => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			const stateChangeDate = getDate(offsetSeconds);
+			room.stateEndTime = stateChangeDate.toISOString();
+			room.stateSchedule = schedule.scheduleJob(stateChangeDate, () => {
+				room.stateSchedule = null;
+				fn();
+			});
+		}
+	};
+
+	handleGuess = (roomId, playerName, guess) => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			const player = room.players.find(p => p.name === playerName);
+
+			if (player.score.turn !== 0) {
+				// Player has already guessed the word.
+				return;
+			}
+
+			if (guess === room.currentWord) {
+				player.score.turn = 100;
+
+				this.broadcast(roomId, {
+					type: 'log',
+					log: {
+						timestamp: new Date().toISOString(),
+						type: 'system',
+						text: `${playerName} guessed the word!`
+					}
+				});
+			} else {
+				this.broadcast(roomId, {
+					type: 'log',
+					log: {
+						timestamp: new Date().toISOString(),
+						type: 'player',
+						playerName,
+						text: guess
+					}
+				});
+			}
+
+			const playersRemaining = room.players.filter(p => p.score.turn === 0);
+			if (playersRemaining.length === 1) {
+				this.stateEndOfTurn(roomId);
 			}
 		}
 	};
+
+	handleCanvasData = (roomId, data) => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			room.canvasData = data;
+
+			this.broadcast(roomId, {
+				type: 'state',
+				room: this.getRoom(roomId)
+			});
+		}
+	};
+
+	pickWords = num => {
+		const arr = [];
+		const max = this.words.length - 1;
+		const min = 0;
+
+		while (arr.length < num) {
+			const wordIndex = Math.floor(Math.random() * (max - min + 1)) + min;
+			const word = this.words[wordIndex];
+			if (!arr.includes(word)) {
+				arr.push(word);
+			}
+		}
+
+		return arr;
+	};
+}
+
+function getDate(offsetSeconds) {
+	const offsetMs = offsetSeconds * 1000;
+	return new Date(Date.now() + offsetMs);
 }
