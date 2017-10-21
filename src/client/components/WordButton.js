@@ -1,35 +1,33 @@
 import React from 'react';
+import styled from 'styled-components';
 import PropTypes from 'prop-types';
 
-const style = {
-	root: {
-		display: 'flex',
-		flex: '0 0 32%',
-		height: '180px',
-		justifyContent: 'center',
-		alignItems: 'center'
-	},
-	word: {
-		width: '50%',
-		height: '50%',
-		display: 'flex',
-		justifyContent: 'center',
-		alignItems: 'center',
-		// BackgroundColor: 'rgba(50, 80, 150, 1)',
-		fontWeight: 'bold',
-		color: '#ddd',
-		border: '1px solid #fff',
-		borderRadius: '2px',
-		cursor: 'pointer'
-	},
-	wordHover: {
-		backgroundColor: 'rgba(255, 255, 255, 0.1)'
+const ButtonContainer = styled.div`
+	display: flex;
+	flex: 0 0 32%;
+	height: 180px;
+	justify-content: center;
+	align-items: center
+`;
+
+const Button = styled.span`
+	width: 50%;
+	height: 50%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-weight: bold;
+	color: #ddd;
+	border: 1px solid #fff;
+	border-radius: 2px;
+	cursor: pointer;
+	
+	&:hover {
+		background-color: rgba(255, 255, 255, 0.1);
 	}
-};
+`;
 
 export default class extends React.Component {
-	state = {hover: false};
-
 	static propTypes = {
 		word: PropTypes.string.isRequired,
 		onClick: PropTypes.func.isRequired
@@ -39,26 +37,13 @@ export default class extends React.Component {
 		this.props.onClick(this.props.word);
 	};
 
-	handleHover = () => {
-		this.setState({hover: true});
-	};
-
-	handleBlur = () => {
-		this.setState({hover: false});
-	};
-
 	render() {
 		return (
-			<div style={style.root}>
-				<span
-					onClick={this.handleClick}
-					onMouseOver={this.handleHover}
-					onMouseOut={this.handleBlur}
-					style={this.state.hover ? Object.assign({}, style.word, style.wordHover) : style.word}
-				>
+			<ButtonContainer>
+				<Button onClick={this.handleClick}>
 					{this.props.word}
-				</span>
-			</div>
+				</Button>
+			</ButtonContainer>
 		);
 	}
 }

@@ -1,5 +1,4 @@
 import express from 'express';
-import shortid from 'shortid';
 import Game from '../game';
 
 const titlePrefix = {
@@ -58,7 +57,7 @@ export default (config, words) => {
 };
 
 function handleRoomRequest(game, ws, msg) {
-	const playerName = msg.playerName || `guest-${shortid.generate()}`;
+	const playerName = msg.playerName || `guest-${Math.floor(Math.random() * (999 - 100)) + 100}`;
 	const roomId = game.createRoom();
 	game.addPlayer(ws, roomId, playerName);
 
@@ -75,7 +74,7 @@ function handleRoomRequest(game, ws, msg) {
 
 function handleJoinRequest(game, ws, msg) {
 	try {
-		const playerName = msg.playerName || `guest-${shortid.generate()}`;
+		const playerName = msg.playerName || `guest-${Math.floor(Math.random() * (999 - 100)) + 100}`;
 		game.addPlayer(ws, msg.roomId, playerName);
 
 		ws.send(

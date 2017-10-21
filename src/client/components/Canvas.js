@@ -1,68 +1,59 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import styled from 'styled-components';
 import {fabric} from 'fabric';
 import {CirclePicker} from 'react-color';
 
-const style = {
-	root: {
-		display: 'flex',
-		flexDirection: 'row'
-	},
-	canvasContainer: {
-		root: {
-			display: 'flex',
-			flexDirection: 'column',
-			position: 'relative'
-		}
-	},
-	brushControl: {
-		root: {
-			display: 'flex',
-			padding: '25px 5px 0 5px',
-			alignItems: 'center',
-			justifyContent: 'center',
-			flexDirection: 'column'
-		},
-		size: {
-			display: 'flex',
-			padding: '20px 0',
-			alignItems: 'center',
-			justifyContent: 'center',
-			flexDirection: 'column'
-		}
-	},
-	tools: {
-		root: {
-			display: 'flex',
-			flexDirection: 'column'
-		},
-		button: {
-			inactive: {
-				border: '1px solid #ddd',
-				borderRadius: '4px',
-				marginLeft: '8px',
-				marginBottom: '8px',
-				padding: '10px 15px',
-				backgroundColor: '#fff',
-				cursor: 'pointer',
-				width: '80px'
-			},
-			active: {
-				border: 'none',
-				borderRadius: '4px',
-				marginLeft: '8px',
-				marginBottom: '8px',
-				padding: '10px 15px',
-				backgroundColor: '#68bc00',
-				color: '#fff',
-				fontWeight: 'bold',
-				cursor: 'default',
-				outline: 'none',
-				width: '80px'
-			}
-		}
+const Container = styled.div`
+	display: flex;
+	flex-direction: row;
+`;
+
+const CanvasContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	position: relative;
+`;
+
+const BrushControls = styled.div`
+	display: flex;
+	padding: 25px 5px 0 5px;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+`;
+
+const BrushSizeControls = styled.div`
+	display: flex;
+	padding: 20px 0;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+`;
+
+const Tools = styled.div`
+	display: flex;
+	flex-direction: column;
+`;
+
+const Button = styled.button`
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin-left: 8px;
+	margin-bottom: 8px;
+	padding: 10px 15px;
+	background-color: ${props => props.active ? '#68bc00' : '#fff'};
+	color: ${props => props.active ? '#fff' : '#444'};
+	cursor: ${props => props.active ? 'default' : 'pointer'};
+	width: 80px;
+	outline: none;
+	
+	${props => !props.active && `
+	&:hover {
+		background-color: #eee;
 	}
-};
+	`}
+`;
 
 const colors = [
 	'#000000',
@@ -110,11 +101,16 @@ export default class extends React.Component {
 		brushSize: 5
 	};
 
+	static defaultProps = {
+		canvasData: null,
+		overlay: null
+	};
+
 	static propTypes = {
-		showControls: PropTypes.bool.isRequired,
-		canvasData: PropTypes.object.isRequired,
 		onDataChanged: PropTypes.func.isRequired,
-		overlay: PropTypes.any.isRequired
+		showControls: PropTypes.bool.isRequired,
+		canvasData: PropTypes.object,
+		overlay: PropTypes.any
 	};
 
 	componentDidMount() {
@@ -390,20 +386,20 @@ export default class extends React.Component {
 		const {showControls, overlay} = this.props;
 
 		return (
-			<div style={style.root}>
-				<div style={style.canvasContainer.root}>
+			<Container>
+				<CanvasContainer>
 					{overlay}
 					<canvas id="canvas" style={{border: '1px solid #000', position: 'absolute'}}/>
 					<canvas id="cursor" style={{position: 'absolute', top: '0', pointerEvents: 'none'}}/>
 					{showControls &&
-						<div style={style.brushControl.root}>
+						<BrushControls>
 							<CirclePicker
 								colors={colors}
 								color={this.state.fillColor}
 								width={720}
 								onChange={this.handleChangeColor}
 							/>
-							<div style={style.brushControl.size}>
+							<BrushSizeControls>
 								<input
 									type="range"
 									min="2"
@@ -414,28 +410,16 @@ export default class extends React.Component {
 									style={{marginBottom: '10px', width: '250px'}}
 								/>
 								<canvas id="brush"/>
-							</div>
-						</div>}
-				</div>
+							</BrushSizeControls>
+						</BrushControls>}
+				</CanvasContainer>
 				{showControls &&
-					<div style={style.tools.root}>
-						<button
-							onClick={this.handleSetPencil}
-							style={style.tools.button[pencil ? 'active' : 'inactive']}
-						>
-							pencil
-						</button>
-						<button
-							onClick={this.handleSetBucket}
-							style={style.tools.button[pencil ? 'inactive' : 'active']}
-						>
-							bucket
-						</button>
-						<button onClick={this.handleClearCanvas} style={style.tools.button.inactive}>
-							clear
-						</button>
-					</div>}
-			</div>
+					<Tools>
+						<Button active={pencil} onClick={this.handleSetPencil}>pencil</Button>
+						<Button active={!pencil} onClick={this.handleSetBucket}>bucket</Button>
+						<Button onClick={this.handleClearCanvas}>clear</Button>
+					</Tools>}
+			</Container>
 		);
 	}
 }

@@ -12,21 +12,22 @@ const State = {
 	SHOW_GAME_SCORE: 'show-game-score'
 };
 
-// Const StateDuration = { // Seconds.
-// 	START_OF_ROUND: 2,
-// 	CHOOSING_WORD: 15,
-// 	DRAWING: 120,
-// 	END_OF_TURN: 2,
-// 	SHOW_TURN_SCORE: 5
-// };
 const StateDuration = {
 	// Seconds.
 	START_OF_ROUND: 2,
-	CHOOSING_WORD: 500,
-	DRAWING: 60,
+	CHOOSING_WORD: 15,
+	DRAWING: 120,
 	END_OF_TURN: 2,
-	SHOW_TURN_SCORE: 2
+	SHOW_TURN_SCORE: 5
 };
+// Const StateDuration = {
+// 	// Seconds.
+// 	START_OF_ROUND: 2,
+// 	CHOOSING_WORD: 2,
+// 	DRAWING: 2,
+// 	END_OF_TURN: 2,
+// 	SHOW_TURN_SCORE: 2000
+// };
 
 const roomBase = {
 	round: 1, // Current round.
@@ -124,6 +125,13 @@ export default class {
 		if (room) {
 			const playerIndex = room.players.findIndex(p => p.name === playerName);
 			if (playerIndex !== -1) {
+				if (room.players[playerIndex].isDrawer && room.state === State.DRAWING) {
+					// Set drawer status to previous player so that the next drawer is chosen correctly.
+					const prevPlayerIndex = (playerIndex - 1 + room.players.length) % room.players.length;
+					room.players[prevPlayerIndex].isDrawer = true;
+					this.stateEndOfTurn(roomId);
+				}
+
 				room.players.splice(playerIndex, 1);
 			}
 
@@ -377,13 +385,20 @@ export default class {
 		if (room) {
 			const player = room.players.find(p => p.name === playerName);
 
+			if (player.isDrawer) {
+				// The drawer is not allowed to speak, let alone guess the word.
+				return;
+			}
+
 			if (player.score.turn !== 0) {
 				// Player has already guessed the word.
 				return;
 			}
 
 			if (guess === room.currentWord) {
-				player.score.turn = 100;
+				const timeRemaining = new Date(room.stateEndTime).getTime() - Date.now();
+				const timeRemainingSeconds = timeRemaining / 1000;
+				player.score.turn = Math.floor(600 * (timeRemainingSeconds / StateDuration.DRAWING));
 
 				this.broadcast(roomId, {
 					type: 'log',
@@ -407,6 +422,11 @@ export default class {
 
 			const playersRemaining = room.players.filter(p => p.score.turn === 0);
 			if (playersRemaining.length === 1) {
+				// All non-drawing players have guessed the word.
+
+				const avg = room.players.reduce((sum, p) => sum + p.score.turn, 0) / room.players.length;
+				this.getDrawer(roomId).score.turn = Math.floor(avg * 0.9);
+
 				this.stateEndOfTurn(roomId);
 			}
 		}

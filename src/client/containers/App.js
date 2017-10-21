@@ -1,157 +1,204 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import styled from 'styled-components';
 import Canvas from '../components/Canvas';
 import WordButton from '../components/WordButton';
 
-const style = {
-	root: {
-		display: 'flex',
-		height: '100%',
-		justifyContent: 'center',
-		alignItems: 'center'
-	},
-	input: {
-		width: '25%'
-	},
-	guessInput: {
-		width: '100%',
-		padding: '10px',
-		boxSizing: 'border-box',
-		border: 'none',
-		borderTop: '1px solid #aaa'
-	},
-	nameInput: {
-		padding: '10px',
-		border: '1px solid #444',
-		width: '100%',
-		boxSizing: 'border-box',
-		marginBottom: '10px'
-	},
-	room: {
-		root: {
-			height: '100%',
-			flex: 1,
-			flexDirection: 'column',
-			display: 'flex'
-		},
-		content: {
-			width: '100%',
-			flex: 1,
-			flexDirection: 'row',
-			display: 'flex'
-		}
-	},
-	playerList: {
-		root: {
-			display: 'flex',
-			flexDirection: 'column',
-			borderRight: '1px solid #444',
-			width: '150px',
-			padding: '20px 0'
-		},
-		listElement: {
-			root: {
-				padding: '10px 50px 10px 20px',
-				textAlign: 'center'
-			},
-			name: {
-				fontWeight: 'bold'
-			},
-			score: {
-				fontSize: '12px'
-			}
-		}
-	},
-	button: {
-		padding: '10px',
-		textAlign: 'center',
-		border: '1px solid #444',
-		cursor: 'pointer'
-	},
-	footer: {
-		root: {
-			width: '100%',
-			flex: '0 1 auto',
-			flexDirection: 'row',
-			display: 'flex',
-			borderTop: '1px solid #444',
-			boxSizing: 'border-box',
-			padding: '1em',
-			justifyContent: 'center'
-		},
-		shareCode: {
-			label: {
-				fontSize: '14px',
-				flex: '0 1 auto'
-			},
-			codeContainer: {
-				padding: '10px',
-				border: '1px solid #aaa',
-				borderRadius: '5px',
-				marginLeft: '10px'
-			}
-		}
-	},
-	gameArea: {
-		root: {
-			display: 'flex',
-			flex: 1,
-			justifyContent: 'center',
-			alignItems: 'center'
-		}
-	},
-	chat: {
-		root: {
-			display: 'flex',
-			flex: '0 0 250px',
-			borderLeft: '1px solid #444',
-			flexDirection: 'column'
-		},
-		content: {
-			flex: 1,
-			boxSizing: 'border-box',
-			overflowY: 'auto'
-		},
-		log: {
-			root: {
-				display: 'flex',
-				flexDirection: 'row',
-				fontSize: '14px',
-				padding: '8px 10px'
-			},
-			playerName: {
-				fontWeight: 'bold',
-				marginRight: '5px'
-			},
-			text: {
-				wordBreak: 'break-all'
-			}
-		}
-	},
-	overlay: {
-		root: {
-			zIndex: 99,
-			position: 'absolute',
-			top: 0,
-			width: '802px',
-			height: '602px',
-			display: 'flex',
-			justifyContent: 'center',
-			alignItems: 'center',
-			backgroundColor: 'rgba(50, 80, 120, 1)',
-			color: '#ddd'
-		},
-		wordChoiceContainer: {
-			root: {
-				display: 'flex',
-				flex: 1,
-				width: '100%',
-				flexWrap: 'wrap',
-				justifyContent: 'space-around'
-			}
-		}
+const Container = styled.div`
+	display: flex;
+	height: 100%;
+	justify-content: center;
+	align-items: center;
+`;
+
+const MenuContainer = styled.div`
+	width: 25%;
+`;
+
+const Input = styled.input`
+	padding: 10px;
+	width: 100%;
+	box-sizing: border-box;
+	border: 1px solid #444;
+`;
+
+const NameInput = Input.extend`
+	margin-bottom: 10px;
+`;
+
+const GuessInput = Input.extend`
+	border: none;
+	border-top: 1px solid #aaa;
+`;
+
+const RoomContainer = styled.div`
+	height: 100%;
+	flex: 1;
+	flex-direction: column;
+	display: flex;
+`;
+
+const RoomContent = styled.div`
+	height: 100%;
+	flex: 1;
+	flex-direction: row;
+	display: flex;
+`;
+
+const PlayerList = styled.div`
+	display: flex;
+	flex-direction: column;
+	border-right: 1px solid #444;
+	width: 150px;
+	padding: 20px 0;
+`;
+
+const PlayerListElement = styled.div`
+	padding: 10px 50px 10px 20px;
+	text-align: center
+`;
+
+const PlayerName = styled.div`
+	font-weight: bold;
+`;
+
+const PlayerScore = styled.div`
+	font-size: 12px;
+`;
+
+const Button = styled.div`
+	padding: 10px;
+	text-align: center;
+	border: 1px solid #444;
+	cursor: pointer;
+`;
+
+const Footer = styled.div`
+	width: 100%;
+	flex: 0 1 auto;
+	flex-direction: row;
+	display: flex;
+	border-top: 1px solid #444;
+	box-sizing: border-box;
+	padding: 1em;
+	justify-content: center;
+`;
+
+const RoomCodeLabel = styled.h2`
+	font-size: 14px;
+	flex: 0 1 auto;
+`;
+
+const RoomCode = styled.span`
+	padding: 10px;
+	border: 1px solid #aaa;
+	border-radius: 5px;
+	margin-left: 10px;
+`;
+
+const GameArea = styled.div`
+	display: flex;
+	flex: 1;
+	justify-content: center;
+	align-items: center;
+`;
+
+const ChatContainer = styled.div`
+	display: flex;
+	flex: 0 0 250px;
+	border-left: 1px solid #444;
+	flex-direction: column;
+`;
+
+const ChatContent = styled.div`
+	flex: 1;
+	box-sizing: border-box;
+	overflow-y: auto;
+`;
+
+const LogContainer = styled.div`
+	display: flex;
+	flex-direction: row;
+	font-size: 14px;
+	padding: 8px 10px;
+	background-color: #fff;
+	
+	&:nth-child(odd) {
+		background-color: #eee;
 	}
-};
+`;
+
+const LogPlayerName = styled.span`
+	font-weight: bold;
+	margin-right: 5px;
+`;
+
+const LogText = styled.span`
+	word-break: break-all;
+`;
+
+const OverlayContainer = styled.div`
+	z-index: 99;
+	position: absolute;
+	top: 0;
+	width: 802px;
+	height: 602px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(50, 80, 120, 1);
+	color: #ddd;
+	text-align: center;
+`;
+
+const TitledOverlayContainer = OverlayContainer.extend`
+	align-items: flex-start;
+`;
+
+const WordChoiceContainer = styled.div`
+	display: flex;
+	flex: 1;
+	width: 100%;
+	flex-wrap: wrap;
+	justify-content: space-around;
+`;
+
+const ScoreContainer = styled.div`
+	display: flex;
+	flex: 1;
+	width: 100%;
+	flex-direction: column;
+`;
+
+const Score = styled.div`
+	display: flex;
+	width: 100%;
+	flex-direction: row;
+	font-size: 32px;
+	color: #fff;
+	justify-content: center;
+`;
+
+const ScorePlayer = styled.div`
+	font-weight: bold;
+	flex: 1;
+	text-align: right;
+	padding: 0.2em 0.5em;
+`;
+
+const ScoreNumber = styled.div`
+	flex: 1;
+	text-align: left;
+	padding: 0.2em 0.5em;
+	color: ${props => props.score === 0 ? '#c57070' : '#a4d23d'};
+`;
+
+const OverlayTitle = styled.h2`
+	font-size: 32px;
+	font-weight: bold;
+	color: #fff;
+	padding: 1em;
+`;
 
 const MessageType = {
 	JOIN_ANSWER: 'join-answer',
@@ -297,47 +344,67 @@ export default class extends React.Component {
 
 		if (room.state === 'start-of-round') {
 			return (
-				<div style={style.overlay.root}>
-					<span>Round {room.round}</span>
-				</div>
+				<OverlayContainer>
+					<OverlayTitle>Round {room.round}</OverlayTitle>
+				</OverlayContainer>
 			);
 		}
 
 		if (room.state === 'choosing-word') {
 			return (
-				<div style={style.overlay.root}>
+				<OverlayContainer>
 					{drawingPlayer.name === name ?
-						<div style={style.overlay.wordChoiceContainer.root}>
+						<WordChoiceContainer>
 							{wordChoices.map(word =>
 								<WordButton key={word} onClick={this.handleChooseWord} word={word}/>
 								)}
-						</div> :
-						<span>{drawingPlayer.name} is choosing a word</span>}
-				</div>
+						</WordChoiceContainer> :
+						<OverlayTitle>{drawingPlayer.name} is choosing a word</OverlayTitle>}
+				</OverlayContainer>
 			);
 		}
 
 		if (room.state === 'end-of-turn') {
 			return (
-				<div style={style.overlay.root}>
-					<span>End of turn</span>
-				</div>
+				<OverlayContainer>
+					<OverlayTitle>End of Turn</OverlayTitle>
+				</OverlayContainer>
 			);
 		}
 
 		if (room.state === 'show-turn-score') {
 			return (
-				<div style={style.overlay.root}>
-					<span>Turn scores</span>
-				</div>
+				<TitledOverlayContainer>
+					<ScoreContainer>
+						<OverlayTitle>Turn Score</OverlayTitle>
+						{room.players.sort((a, b) => b.score.turn - a.score.turn).map(p => {
+							return (
+								<Score key={p.name}>
+									<ScorePlayer>{p.name}:</ScorePlayer>
+									<ScoreNumber score={p.score.turn}>{p.score.turn}</ScoreNumber>
+								</Score>
+							);
+						})}
+					</ScoreContainer>
+				</TitledOverlayContainer>
 			);
 		}
 
 		if (room.state === 'show-game-score') {
 			return (
-				<div style={style.overlay.root}>
-					<span>Scores</span>
-				</div>
+				<TitledOverlayContainer>
+					<ScoreContainer>
+						<OverlayTitle>Game Score</OverlayTitle>
+						{room.players.sort((a, b) => b.score.total - a.score.total).map(p => {
+							return (
+								<Score key={p.name}>
+									<ScorePlayer>{p.name}:</ScorePlayer>
+									<ScoreNumber score={p.score.total}>{p.score.total}</ScoreNumber>
+								</Score>
+							);
+						})}
+					</ScoreContainer>
+				</TitledOverlayContainer>
 			);
 		}
 
@@ -354,37 +421,32 @@ export default class extends React.Component {
 		const owner = room ? room.players[0] : {};
 		const isOwner = name === owner.name;
 		return (
-			<div style={style.root}>
+			<Container>
 				{room === null ?
-					<div style={style.input}>
-						<input
+					<MenuContainer>
+						<NameInput
 							type="text"
 							placeholder="Enter your name"
-							style={style.nameInput}
 							onChange={this.handleNameChange}
 							value={name}
 						/>
-						<div style={style.button} onClick={this.handleClickJoinRoom}>
+						<Button onClick={this.handleClickJoinRoom}>
 							{roomId ? 'Join room' : 'Create room'}
-						</div>
-					</div> :
-					<div style={style.room.root}>
-						<div style={style.room.content}>
-							<div style={style.playerList.root}>
+						</Button>
+					</MenuContainer> :
+					<RoomContainer>
+						<RoomContent>
+							<PlayerList>
 								{room.players.map(p => {
 									return (
-										<div key={p.name} style={style.playerList.listElement.root}>
-											<div style={style.playerList.listElement.name}>
-												{p.name}
-											</div>
-											<div style={style.playerList.listElement.score}>
-													Score: {p.score.total}
-											</div>
-										</div>
+										<PlayerListElement key={p.name}>
+											<PlayerName>{p.name}</PlayerName>
+											<PlayerScore>Score: {p.score.total}</PlayerScore>
+										</PlayerListElement>
 									);
 								})}
-							</div>
-							<div style={style.gameArea.root}>
+							</PlayerList>
+							<GameArea>
 								{room.state === 'inactive' ?
 										isOwner ?
 											<button onClick={this.handleStartGame}>Start Game</button> :
@@ -395,47 +457,39 @@ export default class extends React.Component {
 												overlay={this.getOverlay()}
 												onDataChanged={this.handleCanvasDataChanged}
 											/>}
-							</div>
-							<div style={style.chat.root}>
-								<div
+							</GameArea>
+							<ChatContainer>
+								<ChatContent
 									ref={x => {
 										this.chat = x;
 									}}
-									style={style.chat.content}
 								>
-									{chatLogs.map((log, index) => {
-										const rootStyle = Object.assign({}, style.chat.log.root, {
-											backgroundColor: index % 2 === 0 ? '#eee' : '#fff'
-										});
+									{chatLogs.map(log => {
 										return (
-											<div key={log.timestamp} style={rootStyle}>
+											<LogContainer key={log.timestamp}>
 												{log.type === 'player' &&
-												<div style={style.chat.log.playerName}>{log.playerName}:</div>}
-												<div style={style.chat.log.text}>{log.text}</div>
-											</div>
+												<LogPlayerName>{log.playerName}:</LogPlayerName>}
+												<LogText>{log.text}</LogText>
+											</LogContainer>
 										);
 									})}
-								</div>
-								<input
-									style={style.guessInput}
+								</ChatContent>
+								<GuessInput
 									placeholder="Type your guess here"
 									value={guess}
 									onChange={this.handleGuessChange}
 									onKeyDown={this.handleGuessKeyDown}
 								/>
-							</div>
-						</div>
-						<div style={style.footer.root}>
-							<h2 style={style.footer.shareCode.label}>Share this room:</h2>
-							<span
-								style={style.footer.shareCode.codeContainer}
-								onClick={this.handleClickRoomCodeElem}
-							>
+							</ChatContainer>
+						</RoomContent>
+						<Footer>
+							<RoomCodeLabel>Share this room:</RoomCodeLabel>
+							<RoomCode onClick={this.handleClickRoomCodeElem}>
 								{`${location.origin}/rooms/${room.id}`}
-							</span>
-						</div>
-					</div>}
-			</div>
+							</RoomCode>
+						</Footer>
+					</RoomContainer>}
+			</Container>
 		);
 	}
 }
