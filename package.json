@@ -20,7 +20,8 @@
     "deploy:prod": "better-npm-run deploy:prod",
     "commit": "tuup-commit",
     "commitmsg": "validate-commit-msg",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "heroku-postbuild": "better-npm-run deploy:prod"
   },
   "betterScripts": {
     "compile": {
