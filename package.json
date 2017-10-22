@@ -92,6 +92,7 @@
     "autoprefixer": "^6.3.6",
     "axios": "^0.16.1",
     "babel-plugin-styled-components": "^1.2.1",
+    "better-npm-run": "^0.1.0",
     "css-loader": "^0.23.1",
     "cssnano": "^3.7.1",
     "debug": "^3.1.0",
@@ -127,9 +128,7 @@
     "styled-components": "^2.2.1",
     "uglifyjs-webpack-plugin": "^1.0.0-beta.3",
     "ws": "^3.2.0",
-    "yargs": "^4.7.1"
-  },
-  "devDependencies": {
+    "yargs": "^4.7.1",
     "babel-cli": "^6.10.1",
     "babel-core": "^6.9.1",
     "babel-eslint": "^7.2.3",
@@ -145,15 +144,16 @@
     "babel-preset-stage-1": "^6.5.0",
     "babel-register": "^6.9.0",
     "babel-watch": "^2.0.6",
-    "better-npm-run": "0.0.9",
+    "html-webpack-plugin": "^2.21.0",
+    "rimraf": "^2.5.2",
+    "webpack": "^2.5.1"
+  },
+  "devDependencies": {
     "eslint-config-xo-react": "^0.12.0",
     "eslint-plugin-react-filenames": "^0.0.2",
-    "html-webpack-plugin": "^2.21.0",
     "husky": "^0.13.3",
     "lint-staged": "^4.2.1",
-    "rimraf": "^2.5.2",
     "validate-commit-msg": "^2.12.1",
-    "webpack": "^2.5.1",
     "webpack-dev-middleware": "^1.6.1",
     "webpack-hot-middleware": "^2.10.0",
     "xo": "^0.18.2"

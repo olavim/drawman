@@ -1084,10 +1084,11 @@ bcrypt-pbkdf@^1.0.0:
   dependencies:
     tweetnacl "^0.14.3"
 
-better-npm-run@0.0.9:
-  version "0.0.9"
-  resolved "https://registry.npmjs.org/better-npm-run/-/better-npm-run-0.0.9.tgz#c34334edcd1433345d070d432a2dd1be3deee7a8"
+better-npm-run@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.npmjs.org/better-npm-run/-/better-npm-run-0.1.0.tgz#ea9b2e8e57d6b2a06906ab28bc5672ce8eb2fee8"
   dependencies:
+    commander "^2.9.0"
     dotenv "^2.0.0"
     object-assign "^4.0.1"
 
