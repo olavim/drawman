@@ -327,7 +327,6 @@ export default class extends React.Component {
 					}
 					case MessageType.STATE_UPDATE: {
 						this.setState({room: msg.room}, this.handleStateChange);
-						console.log(msg.room.state);
 						break;
 					}
 					case MessageType.LOG: {
@@ -358,9 +357,11 @@ export default class extends React.Component {
 		const {room} = this.state;
 
 		if (room.state === 'drawing') {
-			this.clockInterval = setInterval(() => {
-				this.forceUpdate();
-			}, 1000);
+			if (!this.clockInterval) {
+				this.clockInterval = setInterval(() => {
+					this.forceUpdate();
+				}, 1000);
+			}
 		} else {
 			if (this.clockInterval) {
 				clearInterval(this.clockInterval);
