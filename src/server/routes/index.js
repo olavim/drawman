@@ -108,7 +108,7 @@ function handleCanvasData(game, ws, msg) {
 
 function handleStartGame(game, ws) {
 	const room = game.getRoom(ws.roomId);
-	if (room.players[0].name === ws.id) {
+	if (room && room.players[0].name === ws.id) {
 		game.startGameInRoom(ws.roomId);
 	}
 }

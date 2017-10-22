@@ -38,19 +38,32 @@ const RoomContainer = styled.div`
 	display: flex;
 `;
 
-const RoomContent = styled.div`
-	height: 100%;
+const RoomContentContainer = styled.div`
 	flex: 1;
 	flex-direction: row;
 	display: flex;
+	align-items: center;
+	background-color: #9ce1fd;
+`;
+
+const RoomContent = styled.div`
+	flex: 1;
+	flex-direction: row;
+	display: flex;
+	justify-content: center;
+	background-color: #9ce1fd;
 `;
 
 const PlayerList = styled.div`
 	display: flex;
 	flex-direction: column;
-	border-right: 1px solid #444;
-	width: 150px;
+	flex: 0 0 150px;
+	box-sizing: border-box;
 	padding: 20px 0;
+	margin-right: 12px;
+	border-radius: 8px;
+	background-color: #fff;
+	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, .1);
 `;
 
 const PlayerListElement = styled.div`
@@ -98,16 +111,35 @@ const RoomCode = styled.span`
 
 const GameArea = styled.div`
 	display: flex;
-	flex: 1;
-	justify-content: center;
+	box-sizing: border-box;
+	justify-content: flex-start;
+	flex-direction: column;
+	background-color: #fff;
+	border-radius: 8px;
+	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, .1);
+`;
+
+const GameAreaHeader = styled.div`
+	display: flex;
+	width: 100%;
+	flex: 0 0 100px;
+	box-sizing: border-box;
+	padding: 0 2em;
 	align-items: center;
+	flex-direction: row;
+	border-bottom: 1px solid #ddd;
 `;
 
 const ChatContainer = styled.div`
 	display: flex;
 	flex: 0 0 250px;
-	border-left: 1px solid #444;
+	box-sizing: border-box;
 	flex-direction: column;
+	background-color: #fff;
+	margin-left: 12px;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, .1);
 `;
 
 const ChatContent = styled.div`
@@ -141,8 +173,8 @@ const OverlayContainer = styled.div`
 	z-index: 99;
 	position: absolute;
 	top: 0;
-	width: 802px;
-	height: 602px;
+	width: 1000px;
+	height: 600px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -198,6 +230,19 @@ const OverlayTitle = styled.h2`
 	font-weight: bold;
 	color: #fff;
 	padding: 1em;
+`;
+
+const ClockContainer = styled.div`
+	width: 100%;
+	font-size: 24px;
+	font-weight: bold;
+	color: #000;
+	padding: 0.2em 0;
+	text-align: left;
+`;
+
+const ClockLabel = styled.span`
+	margin-right: 12px;
 `;
 
 const MessageType = {
@@ -281,7 +326,7 @@ export default class extends React.Component {
 						break;
 					}
 					case MessageType.STATE_UPDATE: {
-						this.setState({room: msg.room});
+						this.setState({room: msg.room}, this.handleStateChange);
 						console.log(msg.room.state);
 						break;
 					}
@@ -307,6 +352,22 @@ export default class extends React.Component {
 				}
 			};
 		});
+	};
+
+	handleStateChange = () => {
+		const {room} = this.state;
+
+		if (room.state === 'drawing') {
+			this.clockInterval = setInterval(() => {
+				this.forceUpdate();
+			}, 1000);
+		} else {
+			if (this.clockInterval) {
+				clearInterval(this.clockInterval);
+			}
+
+			this.clockInterval = null;
+		}
 	};
 
 	handleClickRoomCodeElem = evt => {
@@ -342,6 +403,22 @@ export default class extends React.Component {
 		const {room, name, wordChoices} = this.state;
 		const drawingPlayer = room.players.find(p => p.isDrawer);
 
+		if (room.state === 'inactive') {
+			const owner = room.players[0];
+			if (owner.name === name) {
+				return (
+					<OverlayContainer>
+						<button onClick={this.handleStartGame}>Start Game</button>
+					</OverlayContainer>
+				);
+			}
+			return (
+				<OverlayContainer>
+					<OverlayTitle>Waiting for {owner.name} to start the game</OverlayTitle>
+				</OverlayContainer>
+			);
+		}
+
 		if (room.state === 'start-of-round') {
 			return (
 				<OverlayContainer>
@@ -372,16 +449,22 @@ export default class extends React.Component {
 			);
 		}
 
-		if (room.state === 'show-turn-score') {
+		if (room.state === 'show-turn-score' || room.state === 'show-game-score') {
+			const isTurnScore = room.state === 'show-turn-score';
+			const playersByScore = room.players
+				.slice()
+				.map(p => ({name: p.name, score: isTurnScore ? p.score.turn : p.score.total}))
+				.sort((a, b) => b.score - a.score);
+
 			return (
 				<TitledOverlayContainer>
 					<ScoreContainer>
-						<OverlayTitle>Turn Score</OverlayTitle>
-						{room.players.sort((a, b) => b.score.turn - a.score.turn).map(p => {
+						<OverlayTitle>{isTurnScore ? 'Turn' : 'Game'} Score</OverlayTitle>
+						{playersByScore.map(p => {
 							return (
 								<Score key={p.name}>
 									<ScorePlayer>{p.name}:</ScorePlayer>
-									<ScoreNumber score={p.score.turn}>{p.score.turn}</ScoreNumber>
+									<ScoreNumber score={p.score}>{p.score}</ScoreNumber>
 								</Score>
 							);
 						})}
@@ -390,21 +473,20 @@ export default class extends React.Component {
 			);
 		}
 
-		if (room.state === 'show-game-score') {
+		return null;
+	};
+
+	getClockComponent = () => {
+		const {room} = this.state;
+
+		if (room.state === 'drawing') {
+			const millisRemaining = new Date(room.stateEndTime) - Date.now();
+			const secondsRemaining = Math.floor(millisRemaining / 1000);
 			return (
-				<TitledOverlayContainer>
-					<ScoreContainer>
-						<OverlayTitle>Game Score</OverlayTitle>
-						{room.players.sort((a, b) => b.score.total - a.score.total).map(p => {
-							return (
-								<Score key={p.name}>
-									<ScorePlayer>{p.name}:</ScorePlayer>
-									<ScoreNumber score={p.score.total}>{p.score.total}</ScoreNumber>
-								</Score>
-							);
-						})}
-					</ScoreContainer>
-				</TitledOverlayContainer>
+				<ClockContainer>
+					<ClockLabel>Time:</ClockLabel>
+					<span>{secondsRemaining}</span>
+				</ClockContainer>
 			);
 		}
 
@@ -417,9 +499,6 @@ export default class extends React.Component {
 
 		const isDrawing =
 			room && room.state === 'drawing' && room.players.find(p => p.name === name).isDrawer;
-
-		const owner = room ? room.players[0] : {};
-		const isOwner = name === owner.name;
 		return (
 			<Container>
 				{room === null ?
@@ -435,53 +514,54 @@ export default class extends React.Component {
 						</Button>
 					</MenuContainer> :
 					<RoomContainer>
-						<RoomContent>
-							<PlayerList>
-								{room.players.map(p => {
-									return (
-										<PlayerListElement key={p.name}>
-											<PlayerName>{p.name}</PlayerName>
-											<PlayerScore>Score: {p.score.total}</PlayerScore>
-										</PlayerListElement>
-									);
-								})}
-							</PlayerList>
-							<GameArea>
-								{room.state === 'inactive' ?
-										isOwner ?
-											<button onClick={this.handleStartGame}>Start Game</button> :
-											<span>Waiting for {owner.name} to start the game</span> :
-											<Canvas
-												canvasData={room.canvasData}
-												showControls={isDrawing}
-												overlay={this.getOverlay()}
-												onDataChanged={this.handleCanvasDataChanged}
-											/>}
-							</GameArea>
-							<ChatContainer>
-								<ChatContent
-									ref={x => {
-										this.chat = x;
-									}}
-								>
-									{chatLogs.map(log => {
+						<RoomContentContainer>
+							<RoomContent>
+								<PlayerList>
+									{room.players.map(p => {
 										return (
-											<LogContainer key={log.timestamp}>
-												{log.type === 'player' &&
-												<LogPlayerName>{log.playerName}:</LogPlayerName>}
-												<LogText>{log.text}</LogText>
-											</LogContainer>
+											<PlayerListElement key={p.name}>
+												<PlayerName>{p.name}</PlayerName>
+												<PlayerScore>Score: {p.score.total}</PlayerScore>
+											</PlayerListElement>
 										);
 									})}
-								</ChatContent>
-								<GuessInput
-									placeholder="Type your guess here"
-									value={guess}
-									onChange={this.handleGuessChange}
-									onKeyDown={this.handleGuessKeyDown}
-								/>
-							</ChatContainer>
-						</RoomContent>
+								</PlayerList>
+								<GameArea>
+									<GameAreaHeader>
+										{this.getClockComponent()}
+									</GameAreaHeader>
+									<Canvas
+										canvasData={room.canvasData}
+										showControls={isDrawing}
+										overlay={this.getOverlay()}
+										onDataChanged={this.handleCanvasDataChanged}
+									/>
+								</GameArea>
+								<ChatContainer>
+									<ChatContent
+										ref={x => {
+											this.chat = x;
+										}}
+									>
+										{chatLogs.map(log => {
+											return (
+												<LogContainer key={log.timestamp}>
+													{log.type === 'player' &&
+													<LogPlayerName>{log.playerName}:</LogPlayerName>}
+													<LogText>{log.text}</LogText>
+												</LogContainer>
+											);
+										})}
+									</ChatContent>
+									<GuessInput
+										placeholder="Type your guess here"
+										value={guess}
+										onChange={this.handleGuessChange}
+										onKeyDown={this.handleGuessKeyDown}
+									/>
+								</ChatContainer>
+							</RoomContent>
+						</RoomContentContainer>
 						<Footer>
 							<RoomCodeLabel>Share this room:</RoomCodeLabel>
 							<RoomCode onClick={this.handleClickRoomCodeElem}>

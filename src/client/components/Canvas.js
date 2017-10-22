@@ -16,23 +16,20 @@ const CanvasContainer = styled.div`
 `;
 
 const BrushControls = styled.div`
+	visibility: ${props => props.show ? 'visible' : 'hidden'};
 	display: flex;
-	padding: 25px 5px 0 5px;
+	padding: 25px 5px 25px 5px;
 	align-items: center;
 	justify-content: center;
-	flex-direction: column;
+	flex-direction: row;
+	border-top: 1px solid #ddd;
 `;
 
 const BrushSizeControls = styled.div`
 	display: flex;
-	padding: 20px 0;
+	padding-top: 20px;
 	align-items: center;
 	justify-content: center;
-	flex-direction: column;
-`;
-
-const Tools = styled.div`
-	display: flex;
 	flex-direction: column;
 `;
 
@@ -57,40 +54,27 @@ const Button = styled.button`
 
 const colors = [
 	'#000000',
-	'#4D4D4D',
-	'#666666',
-	'#808080',
-	'#999999',
-	'#B3B3B3',
-	'#cccccc',
-	'#9F0500',
-	'#D33115',
-	'#F44E3B',
-	'#C45100',
-	'#E27300',
-	'#FE9200',
-	'#FB9E00',
-	'#FCC400',
-	'#FCDC00',
-	'#808900',
-	'#B0BC00',
-	'#DBDF00',
-	'#194D33',
-	'#68BC00',
-	'#A4DD00',
-	'#0C797D',
-	'#16A5A5',
-	'#68CCCA',
-	'#0062B1',
-	'#009CE0',
-	'#73D8FF',
-	'#653294',
-	'#7B64FF',
-	'#AEA1FF',
-	'#AB149E',
-	'#FA28FF',
-	'#FDA1FF'
+	'#f44336',
+	'#e91e63',
+	'#9c27b0',
+	'#673ab7',
+	'#3f51b5',
+	'#03a9f4',
+	'#00bcd4',
+	'#009688',
+	'#4caf50',
+	'#8bc34a',
+	'#cddc39',
+	'#ffeb3b',
+	'#ffc107',
+	'#ff9800',
+	'#ff5722',
+	'#795548',
+	'#607d8b'
 ];
+
+const canvasWidth = 1000;
+const canvasHeight = 600;
 
 export default class extends React.Component {
 	state = {
@@ -122,15 +106,29 @@ export default class extends React.Component {
 
 		const brushRadius = this.state.brushSize / 2;
 
+		// This.canvas.skipTargetFind = true;
 		this.canvas.freeDrawingBrush.color = this.state.fillColor;
 		this.canvas.freeDrawingBrush.width = this.state.brushSize;
 		this.canvas.selection = false;
-		this.canvas.setWidth(800);
-		this.canvas.setHeight(600);
+		this.canvas.setWidth(canvasWidth);
+		this.canvas.setHeight(canvasHeight);
 
 		this.cursor = new fabric.StaticCanvas('cursor');
-		this.cursor.setWidth(800);
-		this.cursor.setHeight(600);
+		this.cursor.setWidth(canvasWidth);
+		this.cursor.setHeight(canvasHeight);
+
+		this.brushPreview = new fabric.StaticCanvas('brush');
+		this.brushPreview.setWidth(50);
+		this.brushPreview.setHeight(50);
+		this.brushCircle = new fabric.Circle({
+			left: 25 - brushRadius,
+			top: 25 - brushRadius,
+			radius: brushRadius,
+			fill: 'black',
+			originX: 'center',
+			originY: 'center'
+		});
+		this.brushPreview.add(this.brushCircle);
 
 		this.mouseCursor = new fabric.Circle({
 			left: -100,
@@ -154,19 +152,6 @@ export default class extends React.Component {
 			});
 
 			this.canvas.clear();
-			this.brushPreview = new fabric.StaticCanvas('brush');
-			this.brushPreview.setWidth(50);
-			this.brushPreview.setHeight(50);
-			const brushRadius = this.state.brushSize / 2;
-			this.brushCircle = new fabric.Circle({
-				left: 25 - brushRadius,
-				top: 25 - brushRadius,
-				radius: brushRadius,
-				fill: 'black',
-				originX: 'center',
-				originY: 'center'
-			});
-			this.brushPreview.add(this.brushCircle);
 			this.handleSetPencil();
 		} else if (prevProps.showControls && !this.props.showControls) {
 			this.resetAndLockCanvas();
@@ -242,14 +227,12 @@ export default class extends React.Component {
 			const mouse = this.getPointer(evt.e);
 			const mx = parseInt(mouse.x, 10);
 			const my = parseInt(mouse.y, 10);
-			const width = 800;
-			const height = 600;
 
 			const drawingBoundTop = 0;
-			const imageData = ctx.getImageData(0, 0, width, height);
+			const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
 			const pixelStack = [[mx, my]];
 
-			const pp = (my * width + mx) * 4; // eslint-disable-line no-mixed-operators
+			const pp = (my * canvasWidth + mx) * 4; // eslint-disable-line no-mixed-operators
 			const startColor = {
 				r: imageData.data[pp],
 				g: imageData.data[pp + 1],
@@ -263,19 +246,19 @@ export default class extends React.Component {
 				const x = newPos[0];
 				let y = newPos[1];
 
-				let pixelPos = (y * width + x) * 4; // eslint-disable-line no-mixed-operators
+				let pixelPos = (y * canvasWidth + x) * 4; // eslint-disable-line no-mixed-operators
 
 				while (y >= drawingBoundTop && matchStartColor(pixelPos)) {
 					y--;
-					pixelPos -= width * 4;
+					pixelPos -= canvasWidth * 4;
 				}
 
-				pixelPos += width * 4;
+				pixelPos += canvasWidth * 4;
 				y++;
 				let reachLeft = false;
 				let reachRight = false;
 
-				while (y < height - 1 && matchStartColor(pixelPos)) {
+				while (y < canvasHeight - 1 && matchStartColor(pixelPos)) {
 					y++;
 					colorPixel(pixelPos);
 
@@ -290,7 +273,7 @@ export default class extends React.Component {
 						}
 					}
 
-					if (x < width - 1) {
+					if (x < canvasWidth - 1) {
 						if (matchStartColor(pixelPos + 4)) {
 							if (!reachRight) {
 								pixelStack.push([x + 1, y]);
@@ -301,7 +284,7 @@ export default class extends React.Component {
 						}
 					}
 
-					pixelPos += width * 4;
+					pixelPos += canvasWidth * 4;
 				}
 			}
 
@@ -334,26 +317,29 @@ export default class extends React.Component {
 	};
 
 	removeAntialias = () => {
-		const canvas = document.getElementById('canvas');
-		const ctx = canvas.getContext('2d');
-		const imageData = ctx.getImageData(0, 0, 800, 600);
+		const antialias = false;
+		if (antialias) {
+			const canvas = document.getElementById('canvas');
+			const ctx = canvas.getContext('2d');
+			const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
 
-		for (let i = 0; i < 800; i++) {
-			for (let j = 0; j < 600; j++) {
-				const pp = (j * 800 + i) * 4; // eslint-disable-line no-mixed-operators
-				if (imageData.data[pp + 3] !== 0) {
-					imageData.data[pp + 3] = imageData.data[pp + 3] >= 128 ? 255 : 0;
+			for (let i = 0; i < canvasWidth; i++) {
+				for (let j = 0; j < canvasHeight; j++) {
+					const pp = (j * canvasWidth + i) * 4; // eslint-disable-line no-mixed-operators
+					if (imageData.data[pp + 3] !== 0) {
+						imageData.data[pp + 3] = imageData.data[pp + 3] >= 128 ? 255 : 0;
+					}
 				}
 			}
+
+			ctx.putImageData(imageData, 0, 0);
+
+			fabric.Image.fromURL(canvas.toDataURL(), img => {
+				this.canvas.clear();
+				this.canvas.add(img);
+				this.canvas.renderAll();
+			});
 		}
-
-		ctx.putImageData(imageData, 0, 0);
-
-		fabric.Image.fromURL(canvas.toDataURL(), img => {
-			this.canvas.clear();
-			this.canvas.add(img);
-			this.canvas.renderAll();
-		});
 	};
 
 	handleClearCanvas = () => {
@@ -389,36 +375,32 @@ export default class extends React.Component {
 			<Container>
 				<CanvasContainer>
 					{overlay}
-					<canvas id="canvas" style={{border: '1px solid #000', position: 'absolute'}}/>
+					<canvas id="canvas" style={{position: 'absolute'}}/>
 					<canvas id="cursor" style={{position: 'absolute', top: '0', pointerEvents: 'none'}}/>
-					{showControls &&
-						<BrushControls>
-							<CirclePicker
-								colors={colors}
-								color={this.state.fillColor}
-								width={720}
-								onChange={this.handleChangeColor}
+					<BrushControls show={showControls}>
+						<CirclePicker
+							colors={colors}
+							color={this.state.fillColor}
+							width={400}
+							onChange={this.handleChangeColor}
+						/>
+						<BrushSizeControls>
+							<input
+								type="range"
+								min="2"
+								max="40"
+								step="1"
+								value={this.state.brushSize}
+								onChange={this.handleChangeBrushSize}
+								style={{marginBottom: '10px', width: '250px'}}
 							/>
-							<BrushSizeControls>
-								<input
-									type="range"
-									min="2"
-									max="40"
-									step="1"
-									value={this.state.brushSize}
-									onChange={this.handleChangeBrushSize}
-									style={{marginBottom: '10px', width: '250px'}}
-								/>
-								<canvas id="brush"/>
-							</BrushSizeControls>
-						</BrushControls>}
-				</CanvasContainer>
-				{showControls &&
-					<Tools>
+							<canvas id="brush"/>
+						</BrushSizeControls>
 						<Button active={pencil} onClick={this.handleSetPencil}>pencil</Button>
 						<Button active={!pencil} onClick={this.handleSetBucket}>bucket</Button>
 						<Button onClick={this.handleClearCanvas}>clear</Button>
-					</Tools>}
+					</BrushControls>
+				</CanvasContainer>
 			</Container>
 		);
 	}
