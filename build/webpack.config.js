@@ -1,6 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const debug = require('debug')('drawman:webpack:config');
 const config = require('../config');
 
@@ -67,16 +68,7 @@ if (__DEV__ && config.hot) {
 	);
 } else if (__PROD__) {
 	debug('Enable plugins for production (OccurenceOrder, Dedupe & UglifyJS).');
-	webpackConfig.plugins.push(
-		new webpack.optimize.OccurrenceOrderPlugin(),
-		new webpack.optimize.UglifyJsPlugin({
-			compress: {
-				unused: true,
-				dead_code: true, // eslint-disable-line camelcase
-				warnings: false
-			}
-		})
-	);
+	webpackConfig.plugins.push(new webpack.optimize.OccurrenceOrderPlugin(), new UglifyJsPlugin());
 }
 
 webpackConfig.module.rules = [
