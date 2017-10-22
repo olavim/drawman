@@ -106,7 +106,7 @@ export default class extends React.Component {
 
 		const brushRadius = this.state.brushSize / 2;
 
-		// This.canvas.skipTargetFind = true;
+		this.canvas.skipTargetFind = true;
 		this.canvas.freeDrawingBrush.color = this.state.fillColor;
 		this.canvas.freeDrawingBrush.width = this.state.brushSize;
 		this.canvas.selection = false;
@@ -317,29 +317,26 @@ export default class extends React.Component {
 	};
 
 	removeAntialias = () => {
-		const antialias = false;
-		if (antialias) {
-			const canvas = document.getElementById('canvas');
-			const ctx = canvas.getContext('2d');
-			const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+		const canvas = document.getElementById('canvas');
+		const ctx = canvas.getContext('2d');
+		const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
 
-			for (let i = 0; i < canvasWidth; i++) {
-				for (let j = 0; j < canvasHeight; j++) {
-					const pp = (j * canvasWidth + i) * 4; // eslint-disable-line no-mixed-operators
-					if (imageData.data[pp + 3] !== 0) {
-						imageData.data[pp + 3] = imageData.data[pp + 3] >= 128 ? 255 : 0;
-					}
+		for (let i = 0; i < canvasWidth; i++) {
+			for (let j = 0; j < canvasHeight; j++) {
+				const pp = (j * canvasWidth + i) * 4; // eslint-disable-line no-mixed-operators
+				if (imageData.data[pp + 3] !== 0) {
+					imageData.data[pp + 3] = imageData.data[pp + 3] >= 128 ? 255 : 0;
 				}
 			}
-
-			ctx.putImageData(imageData, 0, 0);
-
-			fabric.Image.fromURL(canvas.toDataURL(), img => {
-				this.canvas.clear();
-				this.canvas.add(img);
-				this.canvas.renderAll();
-			});
 		}
+
+		ctx.putImageData(imageData, 0, 0);
+
+		fabric.Image.fromURL(canvas.toDataURL(), img => {
+			this.canvas.clear();
+			this.canvas.add(img);
+			this.canvas.renderAll();
+		});
 	};
 
 	handleClearCanvas = () => {
@@ -358,7 +355,7 @@ export default class extends React.Component {
 	};
 
 	handleChangeBrushSize = evt => {
-		const val = evt.target.value;
+		const val = parseInt(evt.target.value, 10) || 1;
 		this.setState({brushSize: val});
 		if (this.canvas.isDrawingMode) {
 			this.mouseCursor.set({radius: val / 2}).setCoords().canvas.renderAll();
