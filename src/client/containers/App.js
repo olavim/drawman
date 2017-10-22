@@ -301,7 +301,7 @@ export default class extends React.Component {
 	};
 
 	openConnection = () => {
-		const ws = new WebSocket('ws://localhost:8079');
+		const ws = new WebSocket(`ws://${location.host}`);
 		const {roomId} = this.props.match.params;
 		this.setState({ws}, () => {
 			ws.onopen = () => {

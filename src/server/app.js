@@ -3,7 +3,6 @@ import express from 'express';
 import expressWs from 'express-ws';
 import _debug from 'debug';
 import routes from './routes';
-import devMiddleware from './lib/middleware/dev';
 
 const debug = _debug('drawman:server:app');
 
@@ -24,7 +23,8 @@ export default (config, webpackConfig) => {
 		debug('Setting up hot environment');
 		app.set('views', paths.src('client/views'));
 		webpackConfig.output.filename = 'bundle.js';
-		app.use(devMiddleware(config, webpackConfig));
+		const devMidware = require('./lib/middleware/dev').default;
+		app.use(devMidware(config, webpackConfig));
 	}
 
 	app.use(express.static(paths.dist('client')));
