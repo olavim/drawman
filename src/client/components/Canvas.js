@@ -73,6 +73,37 @@ const colors = [
 	'#607d8b'
 ];
 
+fabric.Image.filters.Simplify = fabric.util.createClass(fabric.Image.filters.BaseFilter, {
+	type: 'simplify',
+	color: {r: 0, g: 0, b: 0},
+
+	applyTo(canvasEl) {
+		const context = canvasEl.getContext('2d');
+		const imageData = context.getImageData(0, 0, canvasEl.width, canvasEl.height);
+		const data = imageData.data;
+
+		for (let i = 0; i < data.length; i += 4) {
+			if (data[i + 3] !== 0) {
+				data[i] = this.color.r;
+				data[i + 1] = this.color.g;
+				data[i + 2] = this.color.b;
+				data[i + 3] = data[i + 3] < 128 ? 0 : 255;
+			}
+		}
+
+		context.putImageData(imageData, 0, 0);
+	},
+
+	toObject() {
+		return {
+			type: this.type,
+			color: this.color
+		};
+	}
+});
+
+fabric.Image.filters.Simplify.fromObject = fabric.Image.filters.BaseFilter.fromObject;
+
 const canvasWidth = 1000;
 const canvasHeight = 600;
 
@@ -82,7 +113,8 @@ export default class extends React.Component {
 			rgb: {r: 0, g: 0, b: 0, a: 255},
 			hex: '#000000'
 		},
-		brushSize: 5
+		brushSize: 5,
+		tool: 'pencil'
 	};
 
 	static defaultProps = {
@@ -112,6 +144,7 @@ export default class extends React.Component {
 		this.canvas.selection = false;
 		this.canvas.setWidth(canvasWidth);
 		this.canvas.setHeight(canvasHeight);
+		this.canvas.getContext().imageSmoothingEnabled = false;
 
 		this.cursor = new fabric.StaticCanvas('cursor');
 		this.cursor.setWidth(canvasWidth);
@@ -138,6 +171,23 @@ export default class extends React.Component {
 			stroke: 'black',
 			originX: 'center',
 			originY: 'center'
+		});
+
+		this.canvas.on('object:added', e => {
+			const obj = e.target;
+			if (obj.get('type') === 'path') {
+				fabric.Image.fromURL(e.target.toDataURL(), img => {
+					this.canvas.add(img);
+					img.set({top: obj.get('top'), left: obj.get('left')}).setCoords();
+					img.filters.push(
+						new fabric.Image.filters.Simplify({
+							color: this.state.fillColor.rgb
+						})
+					);
+					obj.remove();
+					img.applyFilters(this.canvas.renderAll.bind(this.canvas));
+				});
+			}
 		});
 	}
 
@@ -200,11 +250,7 @@ export default class extends React.Component {
 			mouseCursor.set({top: -100, left: -100}).setCoords().canvas.renderAll();
 		});
 
-		this.canvas.on('mouse:up', () => {
-			this.removeAntialias();
-		});
-
-		this.forceUpdate();
+		this.setState({tool: 'pencil'});
 	};
 
 	handleSetBucket = () => {
@@ -313,30 +359,7 @@ export default class extends React.Component {
 			}
 		});
 
-		this.forceUpdate();
-	};
-
-	removeAntialias = () => {
-		const canvas = document.getElementById('canvas');
-		const ctx = canvas.getContext('2d');
-		const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-
-		for (let i = 0; i < canvasWidth; i++) {
-			for (let j = 0; j < canvasHeight; j++) {
-				const pp = (j * canvasWidth + i) * 4; // eslint-disable-line no-mixed-operators
-				if (imageData.data[pp + 3] !== 0) {
-					imageData.data[pp + 3] = imageData.data[pp + 3] >= 128 ? 255 : 0;
-				}
-			}
-		}
-
-		ctx.putImageData(imageData, 0, 0);
-
-		fabric.Image.fromURL(canvas.toDataURL(), img => {
-			this.canvas.clear();
-			this.canvas.add(img);
-			this.canvas.renderAll();
-		});
+		this.setState({tool: 'bucket'});
 	};
 
 	handleClearCanvas = () => {
