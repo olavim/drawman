@@ -17,13 +17,14 @@ const Button = styled.span`
 	justify-content: center;
 	align-items: center;
 	font-weight: bold;
-	color: #ddd;
-	border: 1px solid #fff;
-	border-radius: 2px;
+	color: #4e9ce2;
 	cursor: pointer;
+	background-color: #fff;
+	box-shadow: 3px 3px 10px 0 rgba(0,0,0,.5);
 	
 	&:hover {
-		background-color: rgba(255, 255, 255, 0.1);
+		background-color: #4e9ce2;
+		color: #fff;
 	}
 `;
 

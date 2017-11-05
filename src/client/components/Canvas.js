@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import {fabric} from 'fabric';
 import {CirclePicker} from 'react-color';
+import bucketIcon from './bucket.svg';
 
 const Container = styled.div`
 	display: flex;
@@ -163,16 +164,6 @@ export default class extends React.Component {
 		});
 		this.brushPreview.add(this.brushCircle);
 
-		this.mouseCursor = new fabric.Circle({
-			left: -100,
-			top: -100,
-			radius: brushRadius,
-			fill: 'rgba(255,0,0,0.5)',
-			stroke: 'black',
-			originX: 'center',
-			originY: 'center'
-		});
-
 		this.canvas.on('object:added', e => {
 			const obj = e.target;
 			if (obj.get('type') === 'path') {
@@ -189,6 +180,25 @@ export default class extends React.Component {
 				});
 			}
 		});
+
+		this.canvas.on('mouse:move', evt => {
+			const mouse = this.canvas.getPointer(evt.e);
+			this.mouseCursor
+				.set({
+					top: mouse.y + (this.state.tool === 'bucket' ? -19 : 0),
+					left: mouse.x + (this.state.tool === 'bucket' ? -2 : 0)
+				})
+				.setCoords()
+				.canvas.renderAll();
+		});
+
+		this.canvas.on('mouse:out', () => {
+			this.mouseCursor.set({top: -100, left: -100}).setCoords().canvas.renderAll();
+		});
+	}
+
+	componentWillUnmount() {
+		this.resetAndLockCanvas();
 	}
 
 	componentDidUpdate(prevProps) {
@@ -209,46 +219,36 @@ export default class extends React.Component {
 	}
 
 	resetAndLockCanvas = () => {
-		this.canvas.off('mouse:up');
 		this.canvas.off('mouse:down');
 		this.canvas.off('mouse:move');
 		this.canvas.off('mouse:out');
 		this.canvas.off('after:render');
+		this.canvas.off('object:added');
 
 		this.canvas.isDrawingMode = false;
 		this.canvas.hoverCursor = 'default';
+		this.canvas.defaultCursor = 'default';
 		this.cursor.remove(this.mouseCursor);
 		this.canvas.clear();
 	};
 
 	handleSetPencil = () => {
 		this.canvas.isDrawingMode = true;
-		const mouseCursor = this.mouseCursor;
-		this.cursor.add(mouseCursor);
-		mouseCursor
-			.set({
-				fill: this.state.fillColor.hex,
-				radius: this.state.brushSize / 2
-			})
-			.setCoords()
-			.canvas.renderAll();
+
+		this.mouseCursor = new fabric.Circle({
+			left: -100,
+			top: -100,
+			radius: this.state.brushSize / 2,
+			fill: this.state.fillColor.hex,
+			stroke: 'black',
+			originX: 'center',
+			originY: 'center'
+		});
+
+		this.cursor.add(this.mouseCursor);
+		this.cursor.renderAll();
 
 		this.canvas.off('mouse:down');
-
-		this.canvas.on('mouse:move', function (evt) {
-			const mouse = this.getPointer(evt.e);
-			mouseCursor
-				.set({
-					top: mouse.y,
-					left: mouse.x
-				})
-				.setCoords()
-				.canvas.renderAll();
-		});
-
-		this.canvas.on('mouse:out', () => {
-			mouseCursor.set({top: -100, left: -100}).setCoords().canvas.renderAll();
-		});
 
 		this.setState({tool: 'pencil'});
 	};
@@ -256,11 +256,20 @@ export default class extends React.Component {
 	handleSetBucket = () => {
 		const self = this;
 		this.canvas.isDrawingMode = false;
-		this.canvas.hoverCursor = 'nw-resize';
-		this.cursor.remove(this.mouseCursor);
-		this.canvas.off('mouse:move');
-		this.canvas.off('mouse:out');
-		this.canvas.off('mouse:up');
+		this.canvas.defaultCursor = 'none';
+
+		fabric.loadSVGFromURL(bucketIcon, (objects, options) => {
+			this.cursor.remove(this.mouseCursor);
+
+			const shape = fabric.util.groupSVGElements(objects, options);
+			shape.scaleToWidth(24);
+			shape.scaleToHeight(24);
+			shape.setShadow({color: '#000', blur: 100});
+
+			this.mouseCursor = shape;
+			this.cursor.add(this.mouseCursor);
+			this.cursor.renderAll();
+		});
 
 		const canvas = document.getElementById('canvas');
 		const ctx = canvas.getContext('2d');
@@ -279,13 +288,24 @@ export default class extends React.Component {
 			const pixelStack = [[mx, my]];
 
 			const pp = (my * canvasWidth + mx) * 4; // eslint-disable-line no-mixed-operators
+
 			const startColor = {
 				r: imageData.data[pp],
 				g: imageData.data[pp + 1],
 				b: imageData.data[pp + 2],
 				a: imageData.data[pp + 3]
 			};
+
 			const curColor = self.state.fillColor.rgb;
+
+			if (
+				startColor.r === curColor.r &&
+				startColor.g === curColor.g &&
+				startColor.b === curColor.b &&
+				startColor.a === curColor.a
+			) {
+				return;
+			}
 
 			while (pixelStack.length) {
 				const newPos = pixelStack.pop();
@@ -370,7 +390,7 @@ export default class extends React.Component {
 		color.rgb.a *= 255;
 		this.setState({fillColor: color}, () => {
 			this.canvas.freeDrawingBrush.color = color.hex;
-			if (this.canvas.isDrawingMode) {
+			if (this.canvas.tool === 'pencil') {
 				this.mouseCursor.set({fill: color.hex}).setCoords().canvas.renderAll();
 			}
 			this.brushCircle.set({fill: color.hex}).setCoords().canvas.renderAll();
@@ -388,7 +408,7 @@ export default class extends React.Component {
 	};
 
 	render() {
-		const pencil = this.canvas ? this.canvas.isDrawingMode : true;
+		const pencil = this.state.tool === 'pencil';
 		const {showControls, overlay} = this.props;
 
 		return (

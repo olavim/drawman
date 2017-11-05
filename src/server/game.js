@@ -15,7 +15,7 @@ const State = {
 const StateDuration = {
 	// Seconds.
 	START_OF_ROUND: 2,
-	CHOOSING_WORD: 15,
+	CHOOSING_WORD: 1500,
 	DRAWING: 1200,
 	END_OF_TURN: 2,
 	SHOW_TURN_SCORE: 5

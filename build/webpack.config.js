@@ -115,7 +115,6 @@ webpackConfig.module.rules.push(
 			{
 				loader: 'url-loader',
 				options: {
-					prefix: 'fonts/',
 					name: '[path][name].[ext]',
 					limit: 10000,
 					mimetype: 'image/svg+xml'

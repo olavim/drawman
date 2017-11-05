@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Canvas from '../components/Canvas';
 import WordButton from '../components/WordButton';
+import hourglassIcon from '../components/hourglass.svg';
 
 const Container = styled.div`
 	display: flex;
@@ -29,6 +30,25 @@ const NameInput = Input.extend`
 const GuessInput = Input.extend`
 	border: none;
 	border-top: 1px solid #aaa;
+`;
+
+const StartGameButton = styled.button`
+	width: 400px;
+	height: 80%;
+	border-radius: 4px;
+  border: none;
+  background-color: #83bd93;
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%);
+	
+	&:hover {
+    background-color: #93cda3;
+	}
 `;
 
 const RoomContainer = styled.div`
@@ -68,7 +88,9 @@ const PlayerList = styled.div`
 
 const PlayerListElement = styled.div`
 	padding: 10px 50px 10px 20px;
-	text-align: center
+	text-align: center;
+	background-color: ${props => props.isDrawer ? '#28a29e' : '#fff'};
+	color: ${props => props.isDrawer ? '#fff' : '#000'};
 `;
 
 const PlayerName = styled.div`
@@ -124,10 +146,11 @@ const GameAreaHeader = styled.div`
 	width: 100%;
 	flex: 0 0 100px;
 	box-sizing: border-box;
-	padding: 0 2em;
+	padding: 0 1em;
 	align-items: center;
 	flex-direction: row;
 	border-bottom: 1px solid #ddd;
+	position: relative;
 `;
 
 const ChatContainer = styled.div`
@@ -178,7 +201,7 @@ const OverlayContainer = styled.div`
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: rgba(50, 80, 120, 1);
+	background-color: #ccc;
 	color: #ddd;
 	text-align: center;
 `;
@@ -233,16 +256,67 @@ const OverlayTitle = styled.h2`
 `;
 
 const ClockContainer = styled.div`
-	width: 100%;
+	width: 3em;
+	height: 3em;
 	font-size: 24px;
 	font-weight: bold;
 	color: #000;
 	padding: 0.2em 0;
 	text-align: left;
+	display: flex;
+	align-items: center;
+	position: relative;
 `;
 
-const ClockLabel = styled.span`
-	margin-right: 12px;
+const ClockIcon = styled.span`
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	background: url(${hourglassIcon}) no-repeat;
+	background-position: center center;
+	background-size: 2.5em;
+	position: relative;
+	
+	&:before {
+		content: ' ';
+		position: absolute;
+		width: 60%;
+		height: 60%;
+		top: 50%;
+		left: 50%;
+		border-radius: 100px;
+		transform: translate(-50%, -50%);
+		background: -moz-radial-gradient(center, ellipse cover, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 51%, rgba(255,255,255,0) 100%);
+		background: -webkit-radial-gradient(center, ellipse cover, rgba(255,255,255,1) 0%,rgba(255,255,255,1) 51%,rgba(255,255,255,0) 100%);
+		background: radial-gradient(ellipse at center, rgba(255,255,255,1) 0%,rgba(255,255,255,1) 51%,rgba(255,255,255,0) 100%);
+		filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#00ffffff',GradientType=1 );
+	}
+`;
+
+const ClockTime = styled.span`
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	left: 0;
+	top: 0;
+	color: #129075;
+`;
+
+const RoundNumberText = styled.span`
+	font-weight: bold;
+	font-size: 24px;
+	color: #28a29e;
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%);
+`;
+
+const HeaderControls = styled.span`
 `;
 
 const MessageType = {
@@ -270,6 +344,21 @@ export default class extends React.Component {
 			}).isRequired
 		}).isRequired
 	};
+
+	componentWillUnmount() {
+		if (this.clockInterval) {
+			clearInterval(this.clockInterval);
+			this.clockInterval = null;
+		}
+
+		if (this.state.ws) {
+			try {
+				this.state.ws.close();
+			} catch (err) {
+				// Ignore error.
+			}
+		}
+	}
 
 	sendMessage = msg => {
 		this.state.ws.send(JSON.stringify(msg));
@@ -406,16 +495,11 @@ export default class extends React.Component {
 
 		if (room.state === 'inactive') {
 			const owner = room.players[0];
-			if (owner.name === name) {
-				return (
-					<OverlayContainer>
-						<button onClick={this.handleStartGame}>Start Game</button>
-					</OverlayContainer>
-				);
-			}
+
 			return (
 				<OverlayContainer>
-					<OverlayTitle>Waiting for {owner.name} to start the game</OverlayTitle>
+					{owner.name !== name &&
+						<OverlayTitle>Waiting for {owner.name} to start the game</OverlayTitle>}
 				</OverlayContainer>
 			);
 		}
@@ -485,8 +569,8 @@ export default class extends React.Component {
 			const secondsRemaining = Math.floor(millisRemaining / 1000);
 			return (
 				<ClockContainer>
-					<ClockLabel>Time:</ClockLabel>
-					<span>{secondsRemaining}</span>
+					<ClockIcon/>
+					<ClockTime>{secondsRemaining}</ClockTime>
 				</ClockContainer>
 			);
 		}
@@ -498,7 +582,7 @@ export default class extends React.Component {
 		const {room, name, guess, chatLogs} = this.state;
 		const {roomId} = this.props.match.params;
 
-		const isDrawing =
+		const isDrawer =
 			room && room.state === 'drawing' && room.players.find(p => p.name === name).isDrawer;
 		return (
 			<Container>
@@ -520,7 +604,7 @@ export default class extends React.Component {
 								<PlayerList>
 									{room.players.map(p => {
 										return (
-											<PlayerListElement key={p.name}>
+											<PlayerListElement key={p.name} isDrawer={isDrawer}>
 												<PlayerName>{p.name}</PlayerName>
 												<PlayerScore>Score: {p.score.total}</PlayerScore>
 											</PlayerListElement>
@@ -530,10 +614,18 @@ export default class extends React.Component {
 								<GameArea>
 									<GameAreaHeader>
 										{this.getClockComponent()}
+										{room.state === 'inactive' &&
+												room.players[0].name === name &&
+												<StartGameButton onClick={this.handleStartGame}>
+													Start Game
+												</StartGameButton>}
+										{room.state !== 'inactive' &&
+										<RoundNumberText>Round {room.round} / {room.maxRounds}</RoundNumberText>}
+										<HeaderControls/>
 									</GameAreaHeader>
 									<Canvas
 										canvasData={room.canvasData}
-										showControls={isDrawing}
+										showControls={isDrawer}
 										overlay={this.getOverlay()}
 										onDataChanged={this.handleCanvasDataChanged}
 									/>
