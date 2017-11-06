@@ -324,7 +324,8 @@ const MessageType = {
 	ROOM_ANSWER: 'room-answer',
 	STATE_UPDATE: 'state',
 	LOG: 'log',
-	CHOOSE_WORD: 'choose-word'
+	CHOOSE_WORD: 'choose-word',
+	TIMER: 'timer'
 };
 
 export default class extends React.Component {
@@ -334,7 +335,8 @@ export default class extends React.Component {
 		ws: null,
 		room: null,
 		chatLogs: [],
-		wordChoices: []
+		wordChoices: [],
+		timerValue: null
 	};
 
 	static propTypes = {
@@ -410,14 +412,12 @@ export default class extends React.Component {
 
 				switch (msg.type) {
 					case MessageType.JOIN_ANSWER:
-					case MessageType.ROOM_ANSWER: {
+					case MessageType.ROOM_ANSWER:
 						this.setState({name: msg.playerName, room: msg.room, chatLogs: []});
 						break;
-					}
-					case MessageType.STATE_UPDATE: {
+					case MessageType.STATE_UPDATE:
 						this.setState({room: msg.room}, this.handleStateChange);
 						break;
-					}
 					case MessageType.LOG: {
 						const scrolledToBottom =
 							this.chat.scrollTop === this.chat.scrollHeight - this.chat.clientHeight;
@@ -429,14 +429,15 @@ export default class extends React.Component {
 						});
 						break;
 					}
-					case MessageType.CHOOSE_WORD: {
+					case MessageType.CHOOSE_WORD:
 						this.setState({wordChoices: msg.words});
 						break;
-					}
-					default: {
+					case MessageType.TIMER:
+						this.setState({timerValue: msg.time});
+						break;
+					default:
 						console.log('Unhandled message: ', msg);
 						break;
-					}
 				}
 			};
 		});
@@ -562,15 +563,13 @@ export default class extends React.Component {
 	};
 
 	getClockComponent = () => {
-		const {room} = this.state;
+		const {room, timerValue} = this.state;
 
 		if (room.state === 'drawing') {
-			const millisRemaining = new Date(room.stateEndTime).getTime() - Date.now();
-			const secondsRemaining = Math.floor(millisRemaining / 1000);
 			return (
 				<ClockContainer>
 					<ClockIcon/>
-					<ClockTime>{secondsRemaining}</ClockTime>
+					<ClockTime>{timerValue}</ClockTime>
 				</ClockContainer>
 			);
 		}

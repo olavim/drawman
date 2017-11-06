@@ -41,6 +41,7 @@ const roomBase = {
 	 */
 	stateEndTime: null,
 	stateSchedule: null,
+	clockInterval: null,
 	wordChoices: null // Words from which the drawer chooses a word to draw.
 };
 
@@ -66,6 +67,19 @@ export default class {
 				if (err) {
 					console.log('Failed to send a message to a client: ' + err.message);
 				}
+			});
+		}
+	};
+
+	broadcastTimer = roomId => {
+		const room = this.rooms[roomId];
+
+		if (room) {
+			const countdownMillis = new Date(room.stateEndTime).getTime() - Date.now();
+			const countdownSeconds = Math.max(0, Math.floor(countdownMillis / 1000));
+			this.broadcast(roomId, {
+				type: 'timer',
+				time: countdownSeconds
 			});
 		}
 	};
@@ -165,6 +179,8 @@ export default class {
 			delete room.currentWord;
 			delete room.stateSchedule;
 			delete room.wordChoices;
+			delete room.clockInterval;
+			delete room.stateEndTime;
 		}
 
 		return room;
@@ -217,6 +233,8 @@ export default class {
 				type: 'state',
 				room: this.getRoom(roomId)
 			});
+
+			this.broadcastTimer(roomId);
 		}
 	};
 
@@ -247,6 +265,8 @@ export default class {
 				type: 'state',
 				room: this.getRoom(roomId)
 			});
+
+			this.broadcastTimer(roomId);
 		}
 	};
 
@@ -275,6 +295,8 @@ export default class {
 				type: 'draw-word',
 				word
 			});
+
+			this.broadcastTimer(roomId);
 		}
 	}
 
@@ -295,6 +317,8 @@ export default class {
 				type: 'state',
 				room: this.getRoom(roomId)
 			});
+
+			this.broadcastTimer(roomId);
 		}
 	};
 
@@ -332,6 +356,8 @@ export default class {
 				room: this.getRoom(roomId)
 			});
 
+			this.broadcastTimer(roomId);
+
 			room.players.forEach(p => {
 				p.score.turn = 0;
 			});
@@ -350,6 +376,8 @@ export default class {
 				type: 'state',
 				room: this.getRoom(roomId)
 			});
+
+			this.broadcastTimer(roomId);
 		}
 	};
 
@@ -360,6 +388,11 @@ export default class {
 			if (room.stateSchedule !== null) {
 				room.stateSchedule.cancel();
 				room.stateSchedule = null;
+			}
+
+			if (room.clockInterval !== null) {
+				clearInterval(room.clockInterval);
+				room.clockInterval = null;
 			}
 
 			room.stateEndTime = null;
@@ -376,6 +409,9 @@ export default class {
 				room.stateSchedule = null;
 				fn();
 			});
+			room.clockInterval = setInterval(() => {
+				this.broadcastTimer(roomId);
+			}, 1000);
 		}
 	};
 
