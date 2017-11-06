@@ -25,6 +25,19 @@ export default (config, webpackConfig, app, server) => {
 		next();
 	});
 
+	app.use((req, res, next) => {
+		// Heroku request type.
+		const reqType = req.headers['x-forwarded-proto'];
+		if (reqType && reqType !== 'https') {
+			return res.redirect('https://' + req.headers.host + req.url);
+		} else if (reqType === 'https' || req.protocol === 'https') {
+			return next();
+		}
+
+		// If deployed elsewhere.
+		res.status(403).send({message: 'SSL required', reqType});
+	});
+
 	app.use('/', routes(config, words));
 
 	if (config.env === 'development' && config.hot) {
