@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import {fabric} from 'fabric';
 import {CirclePicker} from 'react-color';
+import _ from 'lodash';
 import bucketIcon from './bucket.svg';
 
 const Container = styled.div`
@@ -75,7 +76,7 @@ const colors = [
 ];
 
 fabric.Image.filters.Simplify = fabric.util.createClass(fabric.Image.filters.BaseFilter, {
-	type: 'simplify',
+	type: 'Simplify',
 	color: {r: 0, g: 0, b: 0},
 
 	applyTo(canvasEl) {
@@ -168,32 +169,39 @@ export default class extends React.Component {
 			const obj = e.target;
 			if (obj.get('type') === 'path') {
 				fabric.Image.fromURL(e.target.toDataURL(), img => {
-					this.canvas.add(img);
+					this.canvas.remove(obj);
 					img.set({top: obj.get('top'), left: obj.get('left')}).setCoords();
 					img.filters.push(
 						new fabric.Image.filters.Simplify({
 							color: this.state.fillColor.rgb
 						})
 					);
-					obj.remove();
-					img.applyFilters(this.canvas.renderAll.bind(this.canvas));
+					img.applyFilters(() => {
+						this.canvasChanged = true;
+						this.canvas.add(img);
+						this.canvas.renderAll();
+					});
 				});
 			}
 		});
 
 		this.canvas.on('mouse:move', evt => {
-			const mouse = this.canvas.getPointer(evt.e);
-			this.mouseCursor
-				.set({
-					top: mouse.y + (this.state.tool === 'bucket' ? -19 : 0),
-					left: mouse.x + (this.state.tool === 'bucket' ? -2 : 0)
-				})
-				.setCoords()
-				.canvas.renderAll();
+			if (this.mouseCursor) {
+				const mouse = this.canvas.getPointer(evt.e);
+				this.mouseCursor
+					.set({
+						top: mouse.y + (this.state.tool === 'bucket' ? -19 : 0),
+						left: mouse.x + (this.state.tool === 'bucket' ? -2 : 0)
+					})
+					.setCoords()
+					.canvas.renderAll();
+			}
 		});
 
 		this.canvas.on('mouse:out', () => {
-			this.mouseCursor.set({top: -100, left: -100}).setCoords().canvas.renderAll();
+			if (this.mouseCursor) {
+				this.mouseCursor.set({top: -100, left: -100}).setCoords().canvas.renderAll();
+			}
 		});
 	}
 
@@ -202,13 +210,18 @@ export default class extends React.Component {
 	}
 
 	componentDidUpdate(prevProps) {
-		if (!this.props.showControls) {
-			this.canvas.loadFromJSON(this.props.canvasData, this.canvas.renderAll.bind(this.canvas));
+		if (!this.props.showControls && !_.isEqual(prevProps.canvasData, this.props.canvasData)) {
+			this.canvas.loadFromDatalessJSON(this.props.canvasData, () => {
+				this.canvas.renderAll();
+			});
 		}
 
 		if (!prevProps.showControls && this.props.showControls) {
 			this.canvas.on('after:render', () => {
-				this.props.onDataChanged(this.canvas.toJSON());
+				if (this.canvasChanged) {
+					this.canvasChanged = false;
+					this.props.onDataChanged(this.canvas.toDatalessJSON());
+				}
 			});
 
 			this.canvas.clear();

@@ -15,7 +15,7 @@ export default (config, webpackConfig) => {
 		lazy: false,
 		stats: config.compilerStats,
 		proxy: {
-			'/': `http://localhost:${config.serverPort}`
+			'/': `https://localhost:${config.serverPort}`
 		}
 	});
 	const hotMiddleware = webpackHotMiddleware(compiler);

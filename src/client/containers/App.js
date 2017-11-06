@@ -390,7 +390,7 @@ export default class extends React.Component {
 	};
 
 	openConnection = () => {
-		const ws = new WebSocket(`ws://${location.host}`);
+		const ws = new WebSocket(`wss://${location.host}`);
 		const {roomId} = this.props.match.params;
 		this.setState({ws}, () => {
 			ws.onopen = () => {
@@ -565,7 +565,7 @@ export default class extends React.Component {
 		const {room} = this.state;
 
 		if (room.state === 'drawing') {
-			const millisRemaining = new Date(room.stateEndTime) - Date.now();
+			const millisRemaining = new Date(room.stateEndTime).getTime() - Date.now();
 			const secondsRemaining = Math.floor(millisRemaining / 1000);
 			return (
 				<ClockContainer>
@@ -604,7 +604,7 @@ export default class extends React.Component {
 								<PlayerList>
 									{room.players.map(p => {
 										return (
-											<PlayerListElement key={p.name} isDrawer={isDrawer}>
+											<PlayerListElement key={p.name} isDrawer={p.isDrawer}>
 												<PlayerName>{p.name}</PlayerName>
 												<PlayerScore>Score: {p.score.total}</PlayerScore>
 											</PlayerListElement>
