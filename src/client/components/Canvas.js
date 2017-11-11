@@ -106,16 +106,13 @@ fabric.Image.filters.Simplify = fabric.util.createClass(fabric.Image.filters.Bas
 
 fabric.Image.filters.Simplify.fromObject = fabric.Image.filters.BaseFilter.fromObject;
 
-const canvasWidth = 1000;
-const canvasHeight = 600;
-
 export default class extends React.Component {
 	state = {
 		fillColor: {
 			rgb: {r: 0, g: 0, b: 0, a: 255},
 			hex: '#000000'
 		},
-		brushSize: 5,
+		brushSize: 6,
 		tool: 'pencil'
 	};
 
@@ -131,11 +128,17 @@ export default class extends React.Component {
 		overlay: PropTypes.any
 	};
 
+	canvasWidth = 1000;
+	canvasHeight = 600;
+
 	componentDidMount() {
 		fabric.Object.prototype.selectable = false;
 
 		this.canvas = new fabric.Canvas('canvas', {
-			freeDrawingCursor: 'none'
+			freeDrawingCursor: 'none',
+			enableRetinaScaling: false,
+			width: this.canvasWidth,
+			height: this.canvasHeight
 		});
 
 		const brushRadius = this.state.brushSize / 2;
@@ -144,13 +147,13 @@ export default class extends React.Component {
 		this.canvas.freeDrawingBrush.color = this.state.fillColor;
 		this.canvas.freeDrawingBrush.width = this.state.brushSize;
 		this.canvas.selection = false;
-		this.canvas.setWidth(canvasWidth);
-		this.canvas.setHeight(canvasHeight);
-		this.canvas.getContext().imageSmoothingEnabled = false;
+		this.canvas.getContext('2d').imageSmoothingEnabled = false;
 
-		this.cursor = new fabric.StaticCanvas('cursor');
-		this.cursor.setWidth(canvasWidth);
-		this.cursor.setHeight(canvasHeight);
+		this.cursor = new fabric.StaticCanvas('cursor', {
+			width: this.canvasWidth,
+			height: this.canvasHeight,
+			enableRetinaScaling: false
+		});
 
 		this.brushPreview = new fabric.StaticCanvas('brush');
 		this.brushPreview.setWidth(50);
@@ -176,9 +179,9 @@ export default class extends React.Component {
 							color: this.state.fillColor.rgb
 						})
 					);
+					this.canvas.add(img);
 					img.applyFilters(() => {
 						this.canvasChanged = true;
-						this.canvas.add(img);
 						this.canvas.renderAll();
 					});
 				});
@@ -203,6 +206,19 @@ export default class extends React.Component {
 				this.mouseCursor.set({top: -100, left: -100}).setCoords().canvas.renderAll();
 			}
 		});
+
+		this.canvas.on('mouse:down', evt => {
+			if (!this.props.showControls) {
+				return;
+			}
+
+			if (this.state.tool === 'bucket') {
+				const mouse = this.canvas.getPointer(evt.e);
+				const x = parseInt(mouse.x, 10);
+				const y = parseInt(mouse.y, 10);
+				this.usePaintBucket({x, y});
+			}
+		});
 	}
 
 	componentWillUnmount() {
@@ -211,7 +227,7 @@ export default class extends React.Component {
 
 	componentDidUpdate(prevProps) {
 		if (!this.props.showControls && !_.isEqual(prevProps.canvasData, this.props.canvasData)) {
-			this.canvas.loadFromDatalessJSON(this.props.canvasData, () => {
+			this.canvas.loadFromJSON(this.props.canvasData, () => {
 				this.canvas.renderAll();
 			});
 		}
@@ -220,7 +236,7 @@ export default class extends React.Component {
 			this.canvas.on('after:render', () => {
 				if (this.canvasChanged) {
 					this.canvasChanged = false;
-					this.props.onDataChanged(this.canvas.toDatalessJSON());
+					this.props.onDataChanged(this.canvas.toJSON());
 				}
 			});
 
@@ -261,13 +277,10 @@ export default class extends React.Component {
 		this.cursor.add(this.mouseCursor);
 		this.cursor.renderAll();
 
-		this.canvas.off('mouse:down');
-
 		this.setState({tool: 'pencil'});
 	};
 
 	handleSetBucket = () => {
-		const self = this;
 		this.canvas.isDrawingMode = false;
 		this.canvas.defaultCursor = 'none';
 
@@ -284,118 +297,90 @@ export default class extends React.Component {
 			this.cursor.renderAll();
 		});
 
-		const canvas = document.getElementById('canvas');
-		const ctx = canvas.getContext('2d');
-
-		this.canvas.on('mouse:down', function (evt) {
-			if (!self.props.showControls) {
-				return;
-			}
-
-			const mouse = this.getPointer(evt.e);
-			const mx = parseInt(mouse.x, 10);
-			const my = parseInt(mouse.y, 10);
-
-			const drawingBoundTop = 0;
-			const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-			const pixelStack = [[mx, my]];
-
-			const pp = (my * canvasWidth + mx) * 4; // eslint-disable-line no-mixed-operators
-
-			const startColor = {
-				r: imageData.data[pp],
-				g: imageData.data[pp + 1],
-				b: imageData.data[pp + 2],
-				a: imageData.data[pp + 3]
-			};
-
-			const curColor = self.state.fillColor.rgb;
-
-			if (
-				startColor.r === curColor.r &&
-				startColor.g === curColor.g &&
-				startColor.b === curColor.b &&
-				startColor.a === curColor.a
-			) {
-				return;
-			}
-
-			while (pixelStack.length) {
-				const newPos = pixelStack.pop();
-				const x = newPos[0];
-				let y = newPos[1];
-
-				let pixelPos = (y * canvasWidth + x) * 4; // eslint-disable-line no-mixed-operators
-
-				while (y >= drawingBoundTop && matchStartColor(pixelPos)) {
-					y--;
-					pixelPos -= canvasWidth * 4;
-				}
-
-				pixelPos += canvasWidth * 4;
-				y++;
-				let reachLeft = false;
-				let reachRight = false;
-
-				while (y < canvasHeight - 1 && matchStartColor(pixelPos)) {
-					y++;
-					colorPixel(pixelPos);
-
-					if (x > 0) {
-						if (matchStartColor(pixelPos - 4)) {
-							if (!reachLeft) {
-								pixelStack.push([x - 1, y]);
-								reachLeft = true;
-							}
-						} else if (reachLeft) {
-							reachLeft = false;
-						}
-					}
-
-					if (x < canvasWidth - 1) {
-						if (matchStartColor(pixelPos + 4)) {
-							if (!reachRight) {
-								pixelStack.push([x + 1, y]);
-								reachRight = true;
-							}
-						} else if (reachRight) {
-							reachRight = false;
-						}
-					}
-
-					pixelPos += canvasWidth * 4;
-				}
-			}
-
-			ctx.putImageData(imageData, 0, 0);
-
-			fabric.Image.fromURL(canvas.toDataURL(), img => {
-				self.canvas.clear();
-				self.canvas.add(img);
-				self.canvas.renderAll();
-			});
-
-			function matchStartColor(pixelPos) {
-				const r = imageData.data[pixelPos];
-				const g = imageData.data[pixelPos + 1];
-				const b = imageData.data[pixelPos + 2];
-				const a = imageData.data[pixelPos + 3];
-
-				return r === startColor.r && g === startColor.g && b === startColor.b && a === startColor.a;
-			}
-
-			function colorPixel(pixelPos) {
-				imageData.data[pixelPos] = curColor.r;
-				imageData.data[pixelPos + 1] = curColor.g;
-				imageData.data[pixelPos + 2] = curColor.b;
-				imageData.data[pixelPos + 3] = curColor.a;
-			}
-		});
-
 		this.setState({tool: 'bucket'});
 	};
 
+	usePaintBucket = coords => {
+		const ctx = this.canvas.getContext('2d');
+
+		const canvasWidth = this.canvasWidth;
+		const canvasHeight = this.canvasHeight;
+
+		const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+		const pp = (coords.y * canvasWidth + coords.x) * 4; // eslint-disable-line no-mixed-operators
+		const pixelStack = [pp];
+		const curColor = this.state.fillColor.rgb;
+
+		const startColor = {
+			r: imageData.data[pp],
+			g: imageData.data[pp + 1],
+			b: imageData.data[pp + 2],
+			a: imageData.data[pp + 3]
+		};
+
+		const matchStartColor = pixelPos =>
+			imageData.data[pixelPos] === startColor.r &&
+			imageData.data[pixelPos + 1] === startColor.g &&
+			imageData.data[pixelPos + 2] === startColor.b &&
+			imageData.data[pixelPos + 3] === startColor.a;
+
+		const colorPixel = pixelPos => {
+			imageData.data[pixelPos] = curColor.r;
+			imageData.data[pixelPos + 1] = curColor.g;
+			imageData.data[pixelPos + 2] = curColor.b;
+			imageData.data[pixelPos + 3] = curColor.a;
+		};
+
+		if (_.isEqual(curColor, startColor)) {
+			return;
+		}
+
+		const dataRowWidth = canvasWidth * 4;
+		colorPixel(pp);
+
+		while (pixelStack.length) {
+			const pixelPos = pixelStack.pop();
+
+			// X > 0
+			if (pixelPos % dataRowWidth !== 0 && matchStartColor(pixelPos - 4)) {
+				colorPixel(pixelPos - 4);
+				pixelStack.push(pixelPos - 4);
+			}
+
+			// X < canvasWidth - 1
+			if ((pixelPos + 4) % dataRowWidth !== 0 && matchStartColor(pixelPos + 4)) {
+				colorPixel(pixelPos + 4);
+				pixelStack.push(pixelPos + 4);
+			}
+
+			// Y > 0
+			if (pixelPos > dataRowWidth && matchStartColor(pixelPos - dataRowWidth)) {
+				colorPixel(pixelPos - dataRowWidth);
+				pixelStack.push(pixelPos - dataRowWidth);
+			}
+
+			// Y < canvasHeight - 1
+			if (
+				pixelPos < canvasHeight * (canvasWidth - 1) * 4 &&
+				matchStartColor(pixelPos + dataRowWidth)
+			) {
+				colorPixel(pixelPos + dataRowWidth);
+				pixelStack.push(pixelPos + dataRowWidth);
+			}
+		}
+
+		ctx.putImageData(imageData, 0, 0);
+		const c = document.getElementById('canvas');
+		fabric.Image.fromURL(c.toDataURL(), img => {
+			this.canvas.clear();
+			this.canvas.add(img);
+			this.canvasChanged = true;
+			this.canvas.renderAll();
+		});
+	};
+
 	handleClearCanvas = () => {
+		this.canvasChanged = true;
 		this.canvas.clear();
 	};
 
@@ -442,7 +427,7 @@ export default class extends React.Component {
 								type="range"
 								min="2"
 								max="40"
-								step="1"
+								step="2"
 								value={this.state.brushSize}
 								onChange={this.handleChangeBrushSize}
 								style={{marginBottom: '10px', width: '250px'}}
