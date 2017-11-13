@@ -4,27 +4,29 @@ import PropTypes from 'prop-types';
 
 const ButtonContainer = styled.div`
 	display: flex;
-	flex: 0 0 32%;
-	height: 180px;
+	flex: 0 0 100%;
 	justify-content: center;
-	align-items: center
+	align-items: center;
+	box-sizing: border-box;
 `;
 
 const Button = styled.span`
-	width: 50%;
-	height: 50%;
+	width: 100%;
+	height: 50px;
 	display: flex;
-	justify-content: center;
+	justify-content: flex-start;
 	align-items: center;
 	font-weight: bold;
-	color: #4e9ce2;
+	color: #777;
 	cursor: pointer;
-	background-color: #fff;
-	box-shadow: 3px 3px 10px 0 rgba(0,0,0,.5);
-	
+	box-sizing: border-box;
+	border-left: 1px solid rgba(0, 0, 0, 0.07);
+	border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+	padding: 0 2em;
+	transition: 0.15s padding ease-out;
+
 	&:hover {
-		background-color: #4e9ce2;
-		color: #fff;
+		padding: 0 4em;
 	}
 `;
 
@@ -41,9 +43,7 @@ export default class extends React.Component {
 	render() {
 		return (
 			<ButtonContainer>
-				<Button onClick={this.handleClick}>
-					{this.props.word}
-				</Button>
+				<Button onClick={this.handleClick}>{this.props.word}</Button>
 			</ButtonContainer>
 		);
 	}

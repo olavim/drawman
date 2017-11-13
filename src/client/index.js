@@ -1,3 +1,4 @@
+import 'particles.js'; // eslint-disable-line import/no-unassigned-import
 import React from 'react';
 import ReactDOM from 'react-dom';
 import ErrorReporter from 'redbox-react';
@@ -9,6 +10,8 @@ require('./styles/style.scss'); // eslint-disable-line import/no-unassigned-impo
 const container = document.getElementById('content');
 
 const render = () => {
+	particlesJS.load('background', './assets/particlesjs.json');
+
 	ReactDOM.render(
 		<Router>
 			<div style={{height: '100%'}}>

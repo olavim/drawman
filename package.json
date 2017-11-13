@@ -125,6 +125,7 @@
     "node-sass": "^3.8.0",
     "node-schedule": "^1.2.5",
     "object-diff": "^0.0.4",
+    "particles.js": "^2.0.0",
     "postcss": "^5.0.21",
     "postcss-loader": "^0.9.1",
     "precss": "^1.4.0",
@@ -133,6 +134,7 @@
     "react-color": "^2.13.8",
     "react-deep-force-update": "^2.0.1",
     "react-dom": "^15.1.0",
+    "react-motion": "^0.5.2",
     "react-redux": "^5.0.4",
     "react-router": "^4.1.1",
     "react-router-dom": "^4.1.1",
@@ -154,6 +156,7 @@
     "eslint-plugin-react-filenames": "^0.0.2",
     "husky": "^0.13.3",
     "lint-staged": "^4.2.1",
+    "prettier": "^1.8.2",
     "validate-commit-msg": "^2.12.1",
     "webpack-dev-middleware": "^1.6.1",
     "webpack-hot-middleware": "^2.10.0",
@@ -170,7 +173,8 @@
       "browser"
     ],
     "globals": [
-      "__DEV__"
+      "__DEV__",
+      "particlesJS"
     ],
     "rules": {
       "react/forbid-component-props": 0,
@@ -188,7 +192,8 @@
         "error",
         "all",
         {
-          "nestedBinaryExpressions": false
+          "nestedBinaryExpressions": false,
+          "ignoreJSX": "all"
         }
       ]
     },

@@ -22,6 +22,8 @@ async function compile(conf) {
 
 		debug('Copy static assets to dist folder.');
 		fs.copySync(paths.src('client/static'), paths.dist('client'));
+		debug('Copy other assets to dist folder.');
+		fs.copySync(paths.src('client/assets'), paths.dist('client/assets'));
 
 		try {
 			debug('Writing compilation stats to file...');

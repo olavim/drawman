@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import Canvas from '../components/Canvas';
 import WordButton from '../components/WordButton';
 import hourglassIcon from '../components/hourglass.svg';
+import OverlayTransition from '../components/OverlayTransition';
 
 const Container = styled.div`
 	display: flex;
@@ -34,20 +35,20 @@ const GuessInput = Input.extend`
 
 const StartGameButton = styled.button`
 	width: 400px;
-	height: 80%;
+	height: 60%;
 	border-radius: 4px;
-  border: none;
-  background-color: #83bd93;
-  color: #fff;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
+	border: none;
+	background-color: #83bd93;
+	color: #fff;
+	font-size: 20px;
+	font-weight: bold;
+	cursor: pointer;
 	position: absolute;
 	left: 50%;
 	transform: translate(-50%);
-	
+
 	&:hover {
-    background-color: #93cda3;
+		background-color: #93cda3;
 	}
 `;
 
@@ -63,7 +64,6 @@ const RoomContentContainer = styled.div`
 	flex-direction: row;
 	display: flex;
 	align-items: center;
-	background-color: #9ce1fd;
 `;
 
 const RoomContent = styled.div`
@@ -71,7 +71,6 @@ const RoomContent = styled.div`
 	flex-direction: row;
 	display: flex;
 	justify-content: center;
-	background-color: #9ce1fd;
 `;
 
 const PlayerList = styled.div`
@@ -83,7 +82,7 @@ const PlayerList = styled.div`
 	margin-right: 12px;
 	border-radius: 8px;
 	background-color: #fff;
-	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, .1);
+	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, 0.1);
 `;
 
 const PlayerListElement = styled.div`
@@ -117,6 +116,7 @@ const Footer = styled.div`
 	box-sizing: border-box;
 	padding: 1em;
 	justify-content: center;
+	background-color: #fff;
 `;
 
 const RoomCodeLabel = styled.h2`
@@ -138,7 +138,7 @@ const GameArea = styled.div`
 	flex-direction: column;
 	background-color: #fff;
 	border-radius: 8px;
-	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, .1);
+	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, 0.1);
 `;
 
 const GameAreaHeader = styled.div`
@@ -162,7 +162,7 @@ const ChatContainer = styled.div`
 	margin-left: 12px;
 	border-radius: 8px;
 	overflow: hidden;
-	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, .1);
+	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, 0.1);
 `;
 
 const ChatContent = styled.div`
@@ -177,7 +177,7 @@ const LogContainer = styled.div`
 	font-size: 14px;
 	padding: 8px 10px;
 	background-color: #fff;
-	
+
 	&:nth-child(odd) {
 		background-color: #eee;
 	}
@@ -196,63 +196,85 @@ const OverlayContainer = styled.div`
 	z-index: 99;
 	position: absolute;
 	top: 0;
-	width: 1000px;
-	height: 600px;
+	width: 100%;
+	height: 100%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: #ccc;
 	color: #ddd;
 	text-align: center;
 `;
 
-const TitledOverlayContainer = OverlayContainer.extend`
-	align-items: flex-start;
+const OverlayTitle = styled.h2`
+	font-size: 24px;
+	font-weight: bold;
+	color: #444;
+	padding: 0.5em;
+	margin: 0;
+`;
+
+const OverlayRibbon = styled.div`
+	width: 100%;
+	height: 120px;
+	font-size: 24px;
+	font-weight: bold;
+	background-color: rgba(0, 0, 0, 0.7);
+	color: #ddd;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 `;
 
 const WordChoiceContainer = styled.div`
 	display: flex;
-	flex: 1;
 	width: 100%;
 	flex-wrap: wrap;
-	justify-content: space-around;
+	justify-content: center;
+	align-items: center;
+	border: 4px solid #28a29e;
+	border-radius: 8px;
+	overflow: hidden;
+	box-sizing: border-box;
+	pointer-events: all;
 `;
 
 const ScoreContainer = styled.div`
 	display: flex;
-	flex: 1;
 	width: 100%;
-	flex-direction: column;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	border: 4px solid #28a29e;
+	border-radius: 8px;
+	overflow: hidden;
+	box-sizing: border-box;
+	pointer-events: all;
 `;
 
 const Score = styled.div`
-	display: flex;
 	width: 100%;
-	flex-direction: row;
-	font-size: 32px;
-	color: #fff;
-	justify-content: center;
+	height: 50px;
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	font-weight: bold;
+	color: #777;
+	box-sizing: border-box;
+	border-left: 1px solid rgba(0, 0, 0, 0.07);
+	border-bottom: 1px solid rgba(0, 0, 0, 0.07);
 `;
 
 const ScorePlayer = styled.div`
 	font-weight: bold;
 	flex: 1;
-	text-align: right;
-	padding: 0.2em 0.5em;
+	text-align: left;
+	padding: 0 0 0 1em;
 `;
 
 const ScoreNumber = styled.div`
 	flex: 1;
 	text-align: left;
-	padding: 0.2em 0.5em;
-	color: ${props => props.score === 0 ? '#c57070' : '#a4d23d'};
-`;
-
-const OverlayTitle = styled.h2`
-	font-size: 32px;
-	font-weight: bold;
-	color: #fff;
-	padding: 1em;
+	color: ${props => props.score === 0 ? '#c57070' : '#28a29e'};
 `;
 
 const ClockContainer = styled.div`
@@ -278,7 +300,7 @@ const ClockIcon = styled.span`
 	background-position: center center;
 	background-size: 2.5em;
 	position: relative;
-	
+
 	&:before {
 		content: ' ';
 		position: absolute;
@@ -288,10 +310,31 @@ const ClockIcon = styled.span`
 		left: 50%;
 		border-radius: 100px;
 		transform: translate(-50%, -50%);
-		background: -moz-radial-gradient(center, ellipse cover, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 51%, rgba(255,255,255,0) 100%);
-		background: -webkit-radial-gradient(center, ellipse cover, rgba(255,255,255,1) 0%,rgba(255,255,255,1) 51%,rgba(255,255,255,0) 100%);
-		background: radial-gradient(ellipse at center, rgba(255,255,255,1) 0%,rgba(255,255,255,1) 51%,rgba(255,255,255,0) 100%);
-		filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#00ffffff',GradientType=1 );
+		background: -moz-radial-gradient(
+			center,
+			ellipse cover,
+			rgba(255, 255, 255, 1) 0%,
+			rgba(255, 255, 255, 1) 51%,
+			rgba(255, 255, 255, 0) 100%
+		);
+		background: -webkit-radial-gradient(
+			center,
+			ellipse cover,
+			rgba(255, 255, 255, 1) 0%,
+			rgba(255, 255, 255, 1) 51%,
+			rgba(255, 255, 255, 0) 100%
+		);
+		background: radial-gradient(
+			ellipse at center,
+			rgba(255, 255, 255, 1) 0%,
+			rgba(255, 255, 255, 1) 51%,
+			rgba(255, 255, 255, 0) 100%
+		);
+		filter: progid:DXImageTransform.Microsoft.gradient(
+				startColorstr='#ffffff',
+				endColorstr='#00ffffff',
+				GradientType=1
+			);
 	}
 `;
 
@@ -316,8 +359,7 @@ const RoundNumberText = styled.span`
 	transform: translate(-50%);
 `;
 
-const HeaderControls = styled.span`
-`;
+const HeaderControls = styled.span``;
 
 const MessageType = {
 	JOIN_ANSWER: 'join-answer',
@@ -328,14 +370,42 @@ const MessageType = {
 	TIMER: 'timer'
 };
 
+const testing = true;
+const testRoom = {
+	round: 1,
+	maxRounds: 3,
+	players: [
+		{
+			name: 'testimies',
+			isDrawer: true,
+			score: {
+				total: 100,
+				turn: 100
+			}
+		},
+		{
+			name: 'toinen',
+			isDrawer: false,
+			score: {
+				total: 0,
+				turn: 0
+			}
+		}
+	],
+	canvasData: null,
+	currentWord: 'centipede',
+	state: 'start-of-round',
+	wordChoices: ['centipede', 'dog', 'cat', 'chair', 'roofing', 'wizard', 'thunder', 'ceiling']
+};
+
 export default class extends React.Component {
 	state = {
-		name: '',
+		name: testing ? testRoom.players[0].name : '',
 		guess: '',
 		ws: null,
-		room: null,
+		room: testing ? testRoom : null,
 		chatLogs: [],
-		wordChoices: [],
+		wordChoices: testing ? testRoom.wordChoices : [],
 		timerValue: null
 	};
 
@@ -346,6 +416,16 @@ export default class extends React.Component {
 			}).isRequired
 		}).isRequired
 	};
+
+	componentDidMount() {
+		if (testing) {
+			const nextState = 'show-turn-score';
+			setTimeout(
+				() => this.setState({room: Object.assign({}, testRoom, {state: nextState})}),
+				1000
+			);
+		}
+	}
 
 	componentWillUnmount() {
 		if (this.clockInterval) {
@@ -392,6 +472,10 @@ export default class extends React.Component {
 	};
 
 	openConnection = () => {
+		if (testing) {
+			return;
+		}
+
 		const ws = new WebSocket(`wss://${location.host}`);
 		const {roomId} = this.props.match.params;
 		this.setState({ws}, () => {
@@ -494,44 +578,56 @@ export default class extends React.Component {
 		const {room, name, wordChoices} = this.state;
 		const drawingPlayer = room.players.find(p => p.isDrawer);
 
-		if (room.state === 'inactive') {
-			const owner = room.players[0];
-
+		if (room.state === 'inactive' && room.players[0].name !== name) {
 			return (
-				<OverlayContainer>
-					{owner.name !== name &&
-						<OverlayTitle>Waiting for {owner.name} to start the game</OverlayTitle>}
-				</OverlayContainer>
+				<OverlayTransition state={room.state}>
+					<OverlayContainer>
+						<OverlayRibbon>Waiting for {room.players[0].name} to start the game</OverlayRibbon>
+					</OverlayContainer>
+				</OverlayTransition>
 			);
 		}
 
 		if (room.state === 'start-of-round') {
 			return (
-				<OverlayContainer>
-					<OverlayTitle>Round {room.round}</OverlayTitle>
-				</OverlayContainer>
+				<OverlayTransition state={room.state}>
+					<OverlayContainer>
+						<OverlayRibbon>Round {room.round}</OverlayRibbon>
+					</OverlayContainer>
+				</OverlayTransition>
 			);
 		}
 
 		if (room.state === 'choosing-word') {
 			return (
-				<OverlayContainer>
-					{drawingPlayer.name === name ?
-						<WordChoiceContainer>
-							{wordChoices.map(word =>
-								<WordButton key={word} onClick={this.handleChooseWord} word={word}/>
-								)}
-						</WordChoiceContainer> :
-						<OverlayTitle>{drawingPlayer.name} is choosing a word</OverlayTitle>}
-				</OverlayContainer>
+				<OverlayTransition state={room.state}>
+					<OverlayContainer>
+						{drawingPlayer.name === name ? (
+							<div style={{width: '60%', textAlign: 'left'}}>
+								<OverlayTitle>Choose word</OverlayTitle>
+								<WordChoiceContainer>
+									{wordChoices.map(word => (
+										<WordButton key={word} onClick={this.handleChooseWord} word={word}/>
+									))}
+								</WordChoiceContainer>
+							</div>
+						) : (
+							<OverlayTitle>
+								<span style={{color: '#A22828'}}>{drawingPlayer.name}</span> is choosing a word
+							</OverlayTitle>
+						)}
+					</OverlayContainer>
+				</OverlayTransition>
 			);
 		}
 
 		if (room.state === 'end-of-turn') {
 			return (
-				<OverlayContainer>
-					<OverlayTitle>End of Turn</OverlayTitle>
-				</OverlayContainer>
+				<OverlayTransition state={room.state}>
+					<OverlayContainer>
+						<OverlayRibbon>End of Turn</OverlayRibbon>
+					</OverlayContainer>
+				</OverlayTransition>
 			);
 		}
 
@@ -543,19 +639,21 @@ export default class extends React.Component {
 				.sort((a, b) => b.score - a.score);
 
 			return (
-				<TitledOverlayContainer>
-					<ScoreContainer>
-						<OverlayTitle>{isTurnScore ? 'Turn' : 'Game'} Score</OverlayTitle>
-						{playersByScore.map(p => {
-							return (
-								<Score key={p.name}>
-									<ScorePlayer>{p.name}:</ScorePlayer>
-									<ScoreNumber score={p.score}>{p.score}</ScoreNumber>
-								</Score>
-							);
-						})}
-					</ScoreContainer>
-				</TitledOverlayContainer>
+				<OverlayTransition state={room.state}>
+					<OverlayContainer>
+						<div style={{width: '60%', textAlign: 'left'}}>
+							<OverlayTitle>{isTurnScore ? 'Turn' : 'Game'} Score</OverlayTitle>
+							<ScoreContainer>
+								{playersByScore.map(p => (
+									<Score key={p.name}>
+										<ScorePlayer>{p.name}</ScorePlayer>
+										<ScoreNumber score={p.score}>{p.score}</ScoreNumber>
+									</Score>
+								))}
+							</ScoreContainer>
+						</div>
+					</OverlayContainer>
+				</OverlayTransition>
 			);
 		}
 
@@ -585,7 +683,7 @@ export default class extends React.Component {
 			room && room.state === 'drawing' && room.players.find(p => p.name === name).isDrawer;
 		return (
 			<Container>
-				{room === null ?
+				{room === null ? (
 					<MenuContainer>
 						<NameInput
 							type="text"
@@ -596,7 +694,8 @@ export default class extends React.Component {
 						<Button onClick={this.handleClickJoinRoom}>
 							{roomId ? 'Join room' : 'Create room'}
 						</Button>
-					</MenuContainer> :
+					</MenuContainer>
+				) : (
 					<RoomContainer>
 						<RoomContentContainer>
 							<RoomContent>
@@ -614,12 +713,14 @@ export default class extends React.Component {
 									<GameAreaHeader>
 										{this.getClockComponent()}
 										{room.state === 'inactive' &&
-												room.players[0].name === name &&
-												<StartGameButton onClick={this.handleStartGame}>
-													Start Game
-												</StartGameButton>}
-										{room.state !== 'inactive' &&
-										<RoundNumberText>Round {room.round} / {room.maxRounds}</RoundNumberText>}
+											room.players[0].name === name && (
+												<StartGameButton onClick={this.handleStartGame}>Start Game</StartGameButton>
+											)}
+										{room.state !== 'inactive' && (
+											<RoundNumberText>
+												Round {room.round} / {room.maxRounds}
+											</RoundNumberText>
+										)}
 										<HeaderControls/>
 									</GameAreaHeader>
 									<Canvas
@@ -638,8 +739,9 @@ export default class extends React.Component {
 										{chatLogs.map(log => {
 											return (
 												<LogContainer key={log.timestamp}>
-													{log.type === 'player' &&
-													<LogPlayerName>{log.playerName}:</LogPlayerName>}
+													{log.type === 'player' && (
+														<LogPlayerName>{log.playerName}:</LogPlayerName>
+													)}
 													<LogText>{log.text}</LogText>
 												</LogContainer>
 											);
@@ -660,7 +762,8 @@ export default class extends React.Component {
 								{`${location.origin}/rooms/${room.id}`}
 							</RoomCode>
 						</Footer>
-					</RoomContainer>}
+					</RoomContainer>
+				)}
 			</Container>
 		);
 	}

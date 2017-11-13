@@ -1,3 +1,4 @@
+import './lib/env'; // eslint-disable-line import/no-unassigned-import
 import path from 'path';
 import fs from 'fs';
 import https from 'https';

@@ -14,20 +14,12 @@ const State = {
 
 const StateDuration = {
 	// Seconds.
-	START_OF_ROUND: 2,
-	CHOOSING_WORD: 1500,
-	DRAWING: 1200,
-	END_OF_TURN: 2,
-	SHOW_TURN_SCORE: 5
+	START_OF_ROUND: parseInt(process.env.DURATION_START_OF_ROUND, 10),
+	CHOOSING_WORD: parseInt(process.env.DURATION_CHOOSING_WORD, 10),
+	DRAWING: parseInt(process.env.DURATION_DRAWING, 10),
+	END_OF_TURN: parseInt(process.env.DURATION_END_OF_TURN, 10),
+	SHOW_TURN_SCORE: parseInt(process.env.DURATION_SHOW_TURN_SCORE, 10)
 };
-// Const StateDuration = {
-// 	// Seconds.
-// 	START_OF_ROUND: 2,
-// 	CHOOSING_WORD: 2,
-// 	DRAWING: 2,
-// 	END_OF_TURN: 2,
-// 	SHOW_TURN_SCORE: 2000
-// };
 
 const roomBase = {
 	round: 1, // Current round.

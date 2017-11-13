@@ -5,6 +5,15 @@ html, body, #content {
   height: 100%;
 }
 
+#background {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #adb6c1;
+  z-index: -1;
+}
+
 * {
   font-family: 'Open Sans';
 }

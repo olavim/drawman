@@ -17,6 +17,16 @@ const CanvasContainer = styled.div`
 	position: relative;
 `;
 
+const OverlayContainer = styled.div`
+	width: 1000px;
+	height: 600px;
+	position: absolute;
+	top: 0;
+	overflow: hidden;
+	z-index: 999;
+	pointer-events: none;
+`;
+
 const BrushControls = styled.div`
 	visibility: ${props => props.show ? 'visible' : 'hidden'};
 	display: flex;
@@ -24,7 +34,6 @@ const BrushControls = styled.div`
 	align-items: center;
 	justify-content: center;
 	flex-direction: row;
-	border-top: 1px solid #ddd;
 `;
 
 const BrushSizeControls = styled.div`
@@ -46,12 +55,14 @@ const Button = styled.button`
 	cursor: ${props => props.active ? 'default' : 'pointer'};
 	width: 80px;
 	outline: none;
-	
-	${props => !props.active && `
+
+	${props =>
+		!props.active &&
+		`
 	&:hover {
 		background-color: #eee;
 	}
-	`}
+	`};
 `;
 
 const colors = [
@@ -203,7 +214,10 @@ export default class extends React.Component {
 
 		this.canvas.on('mouse:out', () => {
 			if (this.mouseCursor) {
-				this.mouseCursor.set({top: -100, left: -100}).setCoords().canvas.renderAll();
+				this.mouseCursor
+					.set({top: -100, left: -100})
+					.setCoords()
+					.canvas.renderAll();
 			}
 		});
 
@@ -389,9 +403,15 @@ export default class extends React.Component {
 		this.setState({fillColor: color}, () => {
 			this.canvas.freeDrawingBrush.color = color.hex;
 			if (this.canvas.tool === 'pencil') {
-				this.mouseCursor.set({fill: color.hex}).setCoords().canvas.renderAll();
+				this.mouseCursor
+					.set({fill: color.hex})
+					.setCoords()
+					.canvas.renderAll();
 			}
-			this.brushCircle.set({fill: color.hex}).setCoords().canvas.renderAll();
+			this.brushCircle
+				.set({fill: color.hex})
+				.setCoords()
+				.canvas.renderAll();
 		});
 	};
 
@@ -399,9 +419,15 @@ export default class extends React.Component {
 		const val = parseInt(evt.target.value, 10) || 1;
 		this.setState({brushSize: val});
 		if (this.canvas.isDrawingMode) {
-			this.mouseCursor.set({radius: val / 2}).setCoords().canvas.renderAll();
+			this.mouseCursor
+				.set({radius: val / 2})
+				.setCoords()
+				.canvas.renderAll();
 		}
-		this.brushCircle.set({radius: val / 2}).setCoords().canvas.renderAll();
+		this.brushCircle
+			.set({radius: val / 2})
+			.setCoords()
+			.canvas.renderAll();
 		this.canvas.freeDrawingBrush.width = val;
 	};
 
@@ -412,9 +438,9 @@ export default class extends React.Component {
 		return (
 			<Container>
 				<CanvasContainer>
-					{overlay}
-					<canvas id="canvas" style={{position: 'absolute'}}/>
-					<canvas id="cursor" style={{position: 'absolute', top: '0', pointerEvents: 'none'}}/>
+					<OverlayContainer>{overlay}</OverlayContainer>
+					<canvas id="canvas" style={{position: 'absolute', borderBottom: '1px solid #ddd'}}/>
+					<canvas id="cursor" style={{position: 'absolute', top: 0, pointerEvents: 'none'}}/>
 					<BrushControls show={showControls}>
 						<CirclePicker
 							colors={colors}
@@ -434,8 +460,12 @@ export default class extends React.Component {
 							/>
 							<canvas id="brush"/>
 						</BrushSizeControls>
-						<Button active={pencil} onClick={this.handleSetPencil}>pencil</Button>
-						<Button active={!pencil} onClick={this.handleSetBucket}>bucket</Button>
+						<Button active={pencil} onClick={this.handleSetPencil}>
+							pencil
+						</Button>
+						<Button active={!pencil} onClick={this.handleSetBucket}>
+							bucket
+						</Button>
 						<Button onClick={this.handleClearCanvas}>clear</Button>
 					</BrushControls>
 				</CanvasContainer>
