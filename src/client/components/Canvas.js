@@ -246,6 +246,11 @@ export default class extends React.Component {
 	}
 
 	componentWillUnmount() {
+		this.canvas.off('mouse:down');
+		this.canvas.off('mouse:out');
+		this.canvas.off('mouse:move');
+		this.canvas.off('after:render');
+		this.canvas.off('object:added');
 		this.resetAndLockCanvas();
 	}
 
