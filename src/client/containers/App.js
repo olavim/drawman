@@ -390,6 +390,25 @@ const ClockIcon = styled.span`
 	}
 `;
 
+const DrawWordLabel = styled.div`
+	display: flex;
+	flex: 0 1 auto;
+	padding: 0 2em;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	label {
+		font-size: 11px;
+		color: #444;
+	}
+
+	b {
+		font-size: 14px;
+		color: #e91e63;
+	}
+`;
+
 const ClockTime = styled.span`
 	display: flex;
 	align-items: center;
@@ -411,14 +430,13 @@ const RoundNumberText = styled.span`
 	transform: translate(-50%);
 `;
 
-const HeaderControls = styled.span``;
-
 const MessageType = {
 	JOIN_ANSWER: 'join-answer',
 	ROOM_ANSWER: 'room-answer',
 	STATE_UPDATE: 'state',
 	LOG: 'log',
 	CHOOSE_WORD: 'choose-word',
+	DRAW_WORD: 'draw-word',
 	TIMER: 'timer'
 };
 
@@ -445,7 +463,6 @@ const testRoom = {
 		}
 	],
 	canvasData: null,
-	currentWord: 'centipede',
 	state: 'inactive',
 	wordChoices: ['centipede', 'dog', 'cat', 'chair', 'roofing', 'wizard', 'thunder', 'ceiling']
 };
@@ -458,7 +475,8 @@ export default class extends React.Component {
 		room: testing ? testRoom : null,
 		chatLogs: [],
 		wordChoices: testing ? testRoom.wordChoices : [],
-		timerValue: null
+		timerValue: null,
+		currentWord: testing ? 'centipede' : null
 	};
 
 	static propTypes = {
@@ -471,7 +489,7 @@ export default class extends React.Component {
 
 	componentDidMount() {
 		if (testing) {
-			const nextState = 'show-turn-score';
+			const nextState = 'drawing';
 			setTimeout(
 				() => this.setState({room: Object.assign({}, testRoom, {state: nextState})}),
 				1000
@@ -567,6 +585,9 @@ export default class extends React.Component {
 					}
 					case MessageType.CHOOSE_WORD:
 						this.setState({wordChoices: msg.words});
+						break;
+					case MessageType.DRAW_WORD:
+						this.setState({currentWord: msg.word});
 						break;
 					case MessageType.TIMER:
 						this.setState({timerValue: msg.time});
@@ -735,7 +756,7 @@ export default class extends React.Component {
 	};
 
 	render() {
-		const {room, name, guess, chatLogs} = this.state;
+		const {room, name, guess, chatLogs, currentWord} = this.state;
 		const {roomId} = this.props.match.params;
 
 		const isDrawer =
@@ -779,7 +800,14 @@ export default class extends React.Component {
 													Round {room.round} / {room.maxRounds}
 												</RoundNumberText>
 											)}
-											<HeaderControls/>
+											{isDrawer ? (
+												<DrawWordLabel>
+													<label>drawing</label>
+													<b>{currentWord}</b>
+												</DrawWordLabel>
+											) : (
+												<div/>
+											)}
 										</GameAreaHeader>
 										<Canvas
 											canvasData={room.canvasData}
