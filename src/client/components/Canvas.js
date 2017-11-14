@@ -203,7 +203,7 @@ export default class extends React.Component {
 		});
 
 		this.canvas.on('mouse:move', evt => {
-			if (this.mouseCursor) {
+			if (this.props.showControls) {
 				const mouse = this.canvas.getPointer(evt.e);
 				this.mouseCursor
 					.set({
@@ -216,7 +216,7 @@ export default class extends React.Component {
 		});
 
 		this.canvas.on('mouse:out', () => {
-			if (this.mouseCursor) {
+			if (this.props.showControls) {
 				this.mouseCursor
 					.set({top: -100, left: -100})
 					.setCoords()
@@ -236,6 +236,13 @@ export default class extends React.Component {
 				this.usePaintBucket({x, y});
 			}
 		});
+
+		this.canvas.on('after:render', () => {
+			if (this.props.showControls && this.canvasChanged) {
+				this.canvasChanged = false;
+				this.props.onDataChanged(this.canvas.toJSON());
+			}
+		});
 	}
 
 	componentWillUnmount() {
@@ -250,13 +257,6 @@ export default class extends React.Component {
 		}
 
 		if (!prevProps.showControls && this.props.showControls) {
-			this.canvas.on('after:render', () => {
-				if (this.canvasChanged) {
-					this.canvasChanged = false;
-					this.props.onDataChanged(this.canvas.toJSON());
-				}
-			});
-
 			this.canvas.clear();
 			this.handleSetPencil();
 		} else if (prevProps.showControls && !this.props.showControls) {
@@ -265,17 +265,12 @@ export default class extends React.Component {
 	}
 
 	resetAndLockCanvas = () => {
-		this.canvas.off('mouse:down');
-		this.canvas.off('mouse:move');
-		this.canvas.off('mouse:out');
-		this.canvas.off('after:render');
-		this.canvas.off('object:added');
-
 		this.canvas.isDrawingMode = false;
 		this.canvas.hoverCursor = 'default';
 		this.canvas.defaultCursor = 'default';
 		this.cursor.remove(this.mouseCursor);
 		this.canvas.clear();
+		this.setState({tool: 'none'});
 	};
 
 	handleSetPencil = () => {
