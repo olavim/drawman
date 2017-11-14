@@ -4739,6 +4739,10 @@ particles.js@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmjs.org/particles.js/-/particles.js-2.0.0.tgz#21386c4328d6c7f96780a201e96eedfc09c736f6"
 
+particlesjs@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmjs.org/particlesjs/-/particlesjs-2.1.0.tgz#94e6a8ba0c49da5f0b901ada01251b6688883d9e"
+
 path-browserify@0.0.0:
   version "0.0.0"
   resolved "https://registry.npmjs.org/path-browserify/-/path-browserify-0.0.0.tgz#a0b870729aae214005b7d5032ec2cbbb0fb4451a"

@@ -6,6 +6,9 @@ import {CirclePicker} from 'react-color';
 import _ from 'lodash';
 import bucketIcon from './bucket.svg';
 
+const canvasWidth = 1000;
+const canvasHeight = 600;
+
 const Container = styled.div`
 	display: flex;
 	flex-direction: row;
@@ -18,8 +21,8 @@ const CanvasContainer = styled.div`
 `;
 
 const OverlayContainer = styled.div`
-	width: 1000px;
-	height: 600px;
+	width: ${canvasWidth}px;
+	height: ${canvasHeight}px;
 	position: absolute;
 	top: 0;
 	overflow: hidden;
@@ -139,8 +142,8 @@ export default class extends React.Component {
 		overlay: PropTypes.any
 	};
 
-	canvasWidth = 1000;
-	canvasHeight = 600;
+	canvasWidth = canvasWidth;
+	canvasHeight = canvasHeight;
 
 	componentDidMount() {
 		fabric.Object.prototype.selectable = false;

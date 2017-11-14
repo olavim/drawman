@@ -126,6 +126,7 @@
     "node-schedule": "^1.2.5",
     "object-diff": "^0.0.4",
     "particles.js": "^2.0.0",
+    "particlesjs": "^2.1.0",
     "postcss": "^5.0.21",
     "postcss-loader": "^0.9.1",
     "precss": "^1.4.0",

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {TransitionMotion, spring} from 'react-motion';
 
 export default class extends React.Component {
-	propTypes = {
+	static propTypes = {
 		state: PropTypes.string.isRequired,
 		children: PropTypes.any.isRequired
 	};

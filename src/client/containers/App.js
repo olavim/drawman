@@ -6,6 +6,15 @@ import WordButton from '../components/WordButton';
 import hourglassIcon from '../components/hourglass.svg';
 import OverlayTransition from '../components/OverlayTransition';
 
+const ArrowRight = styled.div`
+	width: 0;
+	height: 0;
+	border-top: ${p => p.size}px solid ${p => p.border};
+	border-bottom: ${p => p.size}px solid ${p => p.border};
+
+	border-left: ${p => p.size}px solid ${p => p.fill};
+`;
+
 const Container = styled.div`
 	display: flex;
 	height: 100%;
@@ -34,21 +43,30 @@ const GuessInput = Input.extend`
 `;
 
 const StartGameButton = styled.button`
-	width: 400px;
-	height: 60%;
-	border-radius: 4px;
-	border: none;
-	background-color: #83bd93;
-	color: #fff;
+	width: 300px;
+	height: 80px;
+	border-radius: 16px;
+	background-color: #fff;
+	border: 4px solid #28a29e;
+	color: #28a29e;
 	font-size: 20px;
 	font-weight: bold;
 	cursor: pointer;
 	position: absolute;
 	left: 50%;
 	transform: translate(-50%);
+	pointer-events: all;
+	transition: box-shadow 0.15s ease-in-out;
+	box-sizing: border-box;
+	outline: none;
 
 	&:hover {
-		background-color: #93cda3;
+		box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.4);
+	}
+
+	&:active {
+		box-shadow: inset 2px 2px 5px 0 rgba(0, 0, 0, 0.4);
+		padding: 2px 0 0 2px;
 	}
 `;
 
@@ -64,6 +82,7 @@ const RoomContentContainer = styled.div`
 	flex-direction: row;
 	display: flex;
 	align-items: center;
+	justify-content: center;
 `;
 
 const RoomContent = styled.div`
@@ -73,10 +92,18 @@ const RoomContent = styled.div`
 	justify-content: center;
 `;
 
+const Col = styled.div`
+	flex: 0 1 auto;
+	flex-direction: column;
+	display: flex;
+	justify-content: center;
+`;
+
 const PlayerList = styled.div`
 	display: flex;
 	flex-direction: column;
 	flex: 0 0 150px;
+	width: 150px;
 	box-sizing: border-box;
 	padding: 20px 0;
 	margin-right: 12px;
@@ -108,27 +135,40 @@ const Button = styled.div`
 `;
 
 const Footer = styled.div`
-	width: 100%;
-	flex: 0 1 auto;
-	flex-direction: row;
+	margin-top: 10px;
 	display: flex;
-	border-top: 1px solid #444;
-	box-sizing: border-box;
-	padding: 1em;
-	justify-content: center;
-	background-color: #fff;
+	align-items: center;
 `;
 
-const RoomCodeLabel = styled.h2`
-	font-size: 14px;
+const RoomCodeContainer = styled.div`
+	display: flex;
+	background-color: rgba(255, 255, 255, 0.5);
 	flex: 0 1 auto;
+	align-items: center;
+	border-radius: 8px;
+	height: 40px;
+	overflow: hidden;
+	border: 2px solid #fff;
+	box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, 0.1);
 `;
 
-const RoomCode = styled.span`
-	padding: 10px;
-	border: 1px solid #aaa;
-	border-radius: 5px;
-	margin-left: 10px;
+const RoomCodeLabel = styled.label`
+	font-size: 12px;
+	font-weight: bold;
+	flex: 0 1 auto;
+	padding: 10px 20px;
+`;
+
+const RoomCode = styled.div`
+	padding: 0 15px;
+	flex: 0 1 auto;
+	font-size: 12px;
+	font-weight: bold;
+	background-color: #fff;
+	height: 100%;
+	background-color: #fff;
+	align-items: center;
+	display: flex;
 `;
 
 const GameArea = styled.div`
@@ -148,6 +188,7 @@ const GameAreaHeader = styled.div`
 	box-sizing: border-box;
 	padding: 0 1em;
 	align-items: center;
+	justify-content: space-between;
 	flex-direction: row;
 	border-bottom: 1px solid #ddd;
 	position: relative;
@@ -156,6 +197,7 @@ const GameAreaHeader = styled.div`
 const ChatContainer = styled.div`
 	display: flex;
 	flex: 0 0 250px;
+	width: 250px;
 	box-sizing: border-box;
 	flex-direction: column;
 	background-color: #fff;
@@ -220,6 +262,16 @@ const OverlayRibbon = styled.div`
 	font-weight: bold;
 	background-color: rgba(0, 0, 0, 0.7);
 	color: #ddd;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+`;
+
+const OverlayMessage = styled.div`
+	width: 100%;
+	font-size: 18px;
+	font-weight: bold;
+	color: #444;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -370,7 +422,7 @@ const MessageType = {
 	TIMER: 'timer'
 };
 
-const testing = true;
+const testing = false;
 const testRoom = {
 	round: 1,
 	maxRounds: 3,
@@ -394,7 +446,7 @@ const testRoom = {
 	],
 	canvasData: null,
 	currentWord: 'centipede',
-	state: 'start-of-round',
+	state: 'inactive',
 	wordChoices: ['centipede', 'dog', 'cat', 'chair', 'roofing', 'wizard', 'thunder', 'ceiling']
 };
 
@@ -578,11 +630,18 @@ export default class extends React.Component {
 		const {room, name, wordChoices} = this.state;
 		const drawingPlayer = room.players.find(p => p.isDrawer);
 
-		if (room.state === 'inactive' && room.players[0].name !== name) {
+		if (room.state === 'inactive') {
+			const isOwner = room.players[0].name === name;
 			return (
 				<OverlayTransition state={room.state}>
 					<OverlayContainer>
-						<OverlayRibbon>Waiting for {room.players[0].name} to start the game</OverlayRibbon>
+						{isOwner ? (
+							<StartGameButton onClick={this.handleStartGame}>Start Game</StartGameButton>
+						) : (
+							<OverlayMessage>
+								<span>Waiting for ${room.players[0].name} to start the game</span>
+							</OverlayMessage>
+						)}
 					</OverlayContainer>
 				</OverlayTransition>
 			);
@@ -672,7 +731,7 @@ export default class extends React.Component {
 			);
 		}
 
-		return null;
+		return <div/>;
 	};
 
 	render() {
@@ -698,70 +757,73 @@ export default class extends React.Component {
 				) : (
 					<RoomContainer>
 						<RoomContentContainer>
-							<RoomContent>
-								<PlayerList>
-									{room.players.map(p => {
-										return (
-											<PlayerListElement key={p.name} isDrawer={p.isDrawer}>
-												<PlayerName>{p.name}</PlayerName>
-												<PlayerScore>Score: {p.score.total}</PlayerScore>
-											</PlayerListElement>
-										);
-									})}
-								</PlayerList>
-								<GameArea>
-									<GameAreaHeader>
-										{this.getClockComponent()}
-										{room.state === 'inactive' &&
-											room.players[0].name === name && (
-												<StartGameButton onClick={this.handleStartGame}>Start Game</StartGameButton>
-											)}
-										{room.state !== 'inactive' && (
-											<RoundNumberText>
-												Round {room.round} / {room.maxRounds}
-											</RoundNumberText>
-										)}
-										<HeaderControls/>
-									</GameAreaHeader>
-									<Canvas
-										canvasData={room.canvasData}
-										showControls={isDrawer}
-										overlay={this.getOverlay()}
-										onDataChanged={this.handleCanvasDataChanged}
-									/>
-								</GameArea>
-								<ChatContainer>
-									<ChatContent
-										ref={x => {
-											this.chat = x;
-										}}
-									>
-										{chatLogs.map(log => {
+							<Col>
+								<RoomContent>
+									<PlayerList>
+										{room.players.map(p => {
 											return (
-												<LogContainer key={log.timestamp}>
-													{log.type === 'player' && (
-														<LogPlayerName>{log.playerName}:</LogPlayerName>
-													)}
-													<LogText>{log.text}</LogText>
-												</LogContainer>
+												<PlayerListElement key={p.name} isDrawer={p.isDrawer}>
+													<PlayerName>{p.name}</PlayerName>
+													<PlayerScore>Score: {p.score.total}</PlayerScore>
+												</PlayerListElement>
 											);
 										})}
-									</ChatContent>
-									<GuessInput
-										placeholder="Type your guess here"
-										value={guess}
-										onChange={this.handleGuessChange}
-										onKeyDown={this.handleGuessKeyDown}
-									/>
-								</ChatContainer>
-							</RoomContent>
+									</PlayerList>
+									<GameArea>
+										<GameAreaHeader>
+											{this.getClockComponent()}
+											{room.state === 'inactive' ? (
+												<div/>
+											) : (
+												<RoundNumberText>
+													Round {room.round} / {room.maxRounds}
+												</RoundNumberText>
+											)}
+											<HeaderControls/>
+										</GameAreaHeader>
+										<Canvas
+											canvasData={room.canvasData}
+											showControls={isDrawer}
+											overlay={this.getOverlay()}
+											onDataChanged={this.handleCanvasDataChanged}
+										/>
+									</GameArea>
+									<ChatContainer>
+										<ChatContent
+											ref={x => {
+												this.chat = x;
+											}}
+										>
+											{chatLogs.map(log => {
+												return (
+													<LogContainer key={log.timestamp}>
+														{log.type === 'player' && (
+															<LogPlayerName>{log.playerName}:</LogPlayerName>
+														)}
+														<LogText>{log.text}</LogText>
+													</LogContainer>
+												);
+											})}
+										</ChatContent>
+										<GuessInput
+											placeholder="Type your guess here"
+											value={guess}
+											onChange={this.handleGuessChange}
+											onKeyDown={this.handleGuessKeyDown}
+										/>
+									</ChatContainer>
+								</RoomContent>
+								<Footer>
+									<RoomCodeContainer>
+										<RoomCodeLabel>Share this room</RoomCodeLabel>
+										<ArrowRight fill="transparent" border="#fff" size="20"/>
+										<RoomCode onClick={this.handleClickRoomCodeElem}>
+											{`${location.origin}/rooms/${room.id}`}
+										</RoomCode>
+									</RoomCodeContainer>
+								</Footer>
+							</Col>
 						</RoomContentContainer>
-						<Footer>
-							<RoomCodeLabel>Share this room:</RoomCodeLabel>
-							<RoomCode onClick={this.handleClickRoomCodeElem}>
-								{`${location.origin}/rooms/${room.id}`}
-							</RoomCode>
-						</Footer>
 					</RoomContainer>
 				)}
 			</Container>
