@@ -21,6 +21,8 @@ const StateDuration = {
 	SHOW_TURN_SCORE: parseInt(process.env.DURATION_SHOW_TURN_SCORE, 10)
 };
 
+const ROOM_TIMEOUT = 300000; // 5 minutes.
+
 const roomBase = {
 	round: 1, // Current round.
 	maxRounds: 3, // Max rounds.
@@ -34,7 +36,8 @@ const roomBase = {
 	stateEndTime: null,
 	stateSchedule: null,
 	clockInterval: null,
-	wordChoices: null // Words from which the drawer chooses a word to draw.
+	wordChoices: null, // Words from which the drawer chooses a word to draw.
+	roomTimeout: null
 };
 
 export default class {
@@ -46,6 +49,10 @@ export default class {
 	createRoom = (maxRounds = 3) => {
 		const id = shortid.generate();
 		this.rooms[id] = Object.assign({}, roomBase, {id, maxRounds});
+		this.rooms[id].roomTimeout = setTimeout(() => {
+			delete this.rooms[id];
+			console.log(`Room destroyed after no players joined. Rooms left: ${this.rooms.length}`);
+		}, ROOM_TIMEOUT);
 		return id;
 	};
 
@@ -109,6 +116,11 @@ export default class {
 				turn: 0
 			}
 		});
+
+		if (room.roomTimeout) {
+			clearTimeout(room.roomTimeout);
+			room.roomTimeout = null;
+		}
 
 		this.broadcast(roomId, {
 			type: 'state',

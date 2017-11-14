@@ -10,7 +10,7 @@ require('./styles/style.scss'); // eslint-disable-line import/no-unassigned-impo
 const container = document.getElementById('content');
 
 const render = () => {
-	particlesJS.load('background', './assets/particlesjs.json');
+	particlesJS.load('background', '/assets/particlesjs.json');
 
 	ReactDOM.render(
 		<Router>

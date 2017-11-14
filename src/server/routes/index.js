@@ -56,20 +56,17 @@ export default (config, words) => {
 	return router;
 };
 
-function handleRoomRequest(game, ws, msg) {
-	const playerName = msg.playerName || `guest-${Math.floor(Math.random() * (999 - 100)) + 100}`;
+function handleRoomRequest(game, ws) {
 	const roomId = game.createRoom();
-	game.addPlayer(ws, roomId, playerName);
 
 	ws.send(
 		JSON.stringify({
 			type: 'room-answer',
-			playerName,
-			room: game.getRoom(roomId)
+			roomId
 		})
 	);
 
-	console.log('num rooms: ' + Object.keys(game.rooms).length);
+	console.log('Room created. num rooms: ' + Object.keys(game.rooms).length);
 }
 
 function handleJoinRequest(game, ws, msg) {

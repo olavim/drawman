@@ -24,6 +24,10 @@ const Container = styled.div`
 
 const MenuContainer = styled.div`
 	width: 25%;
+	padding: 2em;
+	background-color: #fff;
+	border: 4px solid #28a29e;
+	border-radius: 8px;
 `;
 
 const Input = styled.input`
@@ -553,7 +557,7 @@ export default class extends React.Component {
 				if (roomId) {
 					this.sendMessage({type: 'join-request', playerName: this.state.name, roomId});
 				} else {
-					this.sendMessage({type: 'room-request', playerName: this.state.name});
+					this.sendMessage({type: 'room-request'});
 				}
 			};
 
@@ -566,8 +570,10 @@ export default class extends React.Component {
 
 				switch (msg.type) {
 					case MessageType.JOIN_ANSWER:
-					case MessageType.ROOM_ANSWER:
 						this.setState({name: msg.playerName, room: msg.room, chatLogs: []});
+						break;
+					case MessageType.ROOM_ANSWER:
+						window.location.href = `/rooms/${msg.roomId}`;
 						break;
 					case MessageType.STATE_UPDATE:
 						this.setState({room: msg.room}, this.handleStateChange);
@@ -765,12 +771,14 @@ export default class extends React.Component {
 			<Container>
 				{room === null ? (
 					<MenuContainer>
-						<NameInput
-							type="text"
-							placeholder="Enter your name"
-							onChange={this.handleNameChange}
-							value={name}
-						/>
+						{roomId && (
+							<NameInput
+								type="text"
+								placeholder="Enter your name"
+								onChange={this.handleNameChange}
+								value={name}
+							/>
+						)}
 						<Button onClick={this.handleClickJoinRoom}>
 							{roomId ? 'Join room' : 'Create room'}
 						</Button>
