@@ -3,8 +3,9 @@ import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Canvas from '../components/Canvas';
 import WordButton from '../components/WordButton';
-import hourglassIcon from '../components/hourglass.svg';
 import OverlayTransition from '../components/OverlayTransition';
+import Menu from '../components/Menu';
+import Countdown from '../components/Countdown';
 
 const ArrowRight = styled.div`
 	width: 0;
@@ -22,26 +23,10 @@ const Container = styled.div`
 	align-items: center;
 `;
 
-const MenuContainer = styled.div`
-	width: 25%;
-	padding: 2em;
-	background-color: #fff;
-	border: 4px solid #28a29e;
-	border-radius: 8px;
-`;
-
-const Input = styled.input`
+const GuessInput = styled.input`
 	padding: 10px;
 	width: 100%;
 	box-sizing: border-box;
-	border: 1px solid #444;
-`;
-
-const NameInput = Input.extend`
-	margin-bottom: 10px;
-`;
-
-const GuessInput = Input.extend`
 	border: none;
 	border-top: 1px solid #aaa;
 `;
@@ -129,13 +114,6 @@ const PlayerName = styled.div`
 
 const PlayerScore = styled.div`
 	font-size: 12px;
-`;
-
-const Button = styled.div`
-	padding: 10px;
-	text-align: center;
-	border: 1px solid #444;
-	cursor: pointer;
 `;
 
 const Footer = styled.div`
@@ -333,67 +311,6 @@ const ScoreNumber = styled.div`
 	color: ${props => props.score === 0 ? '#c57070' : '#28a29e'};
 `;
 
-const ClockContainer = styled.div`
-	width: 3em;
-	height: 3em;
-	font-size: 24px;
-	font-weight: bold;
-	color: #000;
-	padding: 0.2em 0;
-	text-align: left;
-	display: flex;
-	align-items: center;
-	position: relative;
-`;
-
-const ClockIcon = styled.span`
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	height: 100%;
-	background: url(${hourglassIcon}) no-repeat;
-	background-position: center center;
-	background-size: 2.5em;
-	position: relative;
-
-	&:before {
-		content: ' ';
-		position: absolute;
-		width: 60%;
-		height: 60%;
-		top: 50%;
-		left: 50%;
-		border-radius: 100px;
-		transform: translate(-50%, -50%);
-		background: -moz-radial-gradient(
-			center,
-			ellipse cover,
-			rgba(255, 255, 255, 1) 0%,
-			rgba(255, 255, 255, 1) 51%,
-			rgba(255, 255, 255, 0) 100%
-		);
-		background: -webkit-radial-gradient(
-			center,
-			ellipse cover,
-			rgba(255, 255, 255, 1) 0%,
-			rgba(255, 255, 255, 1) 51%,
-			rgba(255, 255, 255, 0) 100%
-		);
-		background: radial-gradient(
-			ellipse at center,
-			rgba(255, 255, 255, 1) 0%,
-			rgba(255, 255, 255, 1) 51%,
-			rgba(255, 255, 255, 0) 100%
-		);
-		filter: progid:DXImageTransform.Microsoft.gradient(
-				startColorstr='#ffffff',
-				endColorstr='#00ffffff',
-				GradientType=1
-			);
-	}
-`;
-
 const DrawWordLabel = styled.div`
 	display: flex;
 	flex: 0 1 auto;
@@ -411,18 +328,6 @@ const DrawWordLabel = styled.div`
 		font-size: 14px;
 		color: #e91e63;
 	}
-`;
-
-const ClockTime = styled.span`
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	height: 100%;
-	position: absolute;
-	left: 0;
-	top: 0;
-	color: #129075;
 `;
 
 const RoundNumberText = styled.span`
@@ -471,7 +376,7 @@ const testRoom = {
 	wordChoices: ['centipede', 'dog', 'cat', 'chair', 'roofing', 'wizard', 'thunder', 'ceiling']
 };
 
-export default class extends React.Component {
+class App extends React.Component {
 	state = {
 		name: testing ? testRoom.players[0].name : '',
 		guess: '',
@@ -488,6 +393,9 @@ export default class extends React.Component {
 			params: PropTypes.shape({
 				roomId: PropTypes.string
 			}).isRequired
+		}).isRequired,
+		history: PropTypes.shape({
+			push: PropTypes.func.isRequired
 		}).isRequired
 	};
 
@@ -499,6 +407,11 @@ export default class extends React.Component {
 				1000
 			);
 		}
+	}
+
+	componentWillReceiveProps(props, state) {
+		console.log(props);
+		this.setState(state);
 	}
 
 	componentWillUnmount() {
@@ -520,10 +433,6 @@ export default class extends React.Component {
 		this.state.ws.send(JSON.stringify(msg));
 	};
 
-	handleNameChange = evt => {
-		this.setState({name: evt.target.value});
-	};
-
 	handleGuessChange = evt => {
 		this.setState({guess: evt.target.value});
 	};
@@ -536,7 +445,16 @@ export default class extends React.Component {
 		}
 	};
 
-	handleClickJoinRoom = async () => {
+	handleJoinRoom = async name => {
+		if (this.state.ws) {
+			this.state.ws.close();
+			this.setState({ws: null}, () => this.openConnection(name));
+		} else {
+			this.openConnection(name);
+		}
+	};
+
+	handleCreateRoom = async () => {
 		if (this.state.ws) {
 			this.state.ws.close();
 			this.setState({ws: null}, this.openConnection);
@@ -545,7 +463,7 @@ export default class extends React.Component {
 		}
 	};
 
-	openConnection = () => {
+	openConnection = playerName => {
 		if (testing) {
 			return;
 		}
@@ -555,7 +473,7 @@ export default class extends React.Component {
 		this.setState({ws}, () => {
 			ws.onopen = () => {
 				if (roomId) {
-					this.sendMessage({type: 'join-request', playerName: this.state.name, roomId});
+					this.sendMessage({type: 'join-request', playerName, roomId});
 				} else {
 					this.sendMessage({type: 'room-request'});
 				}
@@ -573,7 +491,7 @@ export default class extends React.Component {
 						this.setState({name: msg.playerName, room: msg.room, chatLogs: []});
 						break;
 					case MessageType.ROOM_ANSWER:
-						window.location.href = `/rooms/${msg.roomId}`;
+						this.props.history.push(`/rooms/${msg.roomId}`);
 						break;
 					case MessageType.STATE_UPDATE:
 						this.setState({room: msg.room}, this.handleStateChange);
@@ -746,43 +664,24 @@ export default class extends React.Component {
 		return null;
 	};
 
-	getClockComponent = () => {
-		const {room, timerValue} = this.state;
-
-		if (room.state === 'drawing') {
-			return (
-				<ClockContainer>
-					<ClockIcon/>
-					<ClockTime>{timerValue}</ClockTime>
-				</ClockContainer>
-			);
-		}
-
-		return <div/>;
-	};
+	constructor(props) {
+		super(props);
+		console.log('cons');
+	}
 
 	render() {
-		const {room, name, guess, chatLogs, currentWord} = this.state;
-		const {roomId} = this.props.match.params;
+		const {room, name, guess, chatLogs, currentWord, timerValue} = this.state;
 
 		const isDrawer =
 			room && room.state === 'drawing' && room.players.find(p => p.name === name).isDrawer;
 		return (
 			<Container>
 				{room === null ? (
-					<MenuContainer>
-						{roomId && (
-							<NameInput
-								type="text"
-								placeholder="Enter your name"
-								onChange={this.handleNameChange}
-								value={name}
-							/>
-						)}
-						<Button onClick={this.handleClickJoinRoom}>
-							{roomId ? 'Join room' : 'Create room'}
-						</Button>
-					</MenuContainer>
+					<Menu
+						onJoinRoom={this.handleJoinRoom}
+						onCreateRoom={this.handleCreateRoom}
+						roomId={this.props.match.params.roomId}
+					/>
 				) : (
 					<RoomContainer>
 						<RoomContentContainer>
@@ -800,7 +699,7 @@ export default class extends React.Component {
 									</PlayerList>
 									<GameArea>
 										<GameAreaHeader>
-											{this.getClockComponent()}
+											{timerValue && <Countdown value={timerValue} state={room.state}/>}
 											{room.state === 'inactive' ? (
 												<div/>
 											) : (
@@ -866,3 +765,5 @@ export default class extends React.Component {
 		);
 	}
 }
+
+export default App;

@@ -2,12 +2,17 @@ import 'particles.js'; // eslint-disable-line import/no-unassigned-import
 import React from 'react';
 import ReactDOM from 'react-dom';
 import ErrorReporter from 'redbox-react';
-import {BrowserRouter as Router, Route} from 'react-router-dom';
+import {BrowserRouter as Router, Route, matchPath} from 'react-router-dom';
 import App from './containers/App';
 
 require('./styles/style.scss'); // eslint-disable-line import/no-unassigned-import
 
 const container = document.getElementById('content');
+
+const renderRoot = props => {
+	const match = matchPath(location.pathname, {path: '/rooms/:roomId'}) || {params: {}};
+	return <App {...props} match={match}/>;
+};
 
 const render = () => {
 	particlesJS.load('background', '/assets/particlesjs.json');
@@ -15,8 +20,7 @@ const render = () => {
 	ReactDOM.render(
 		<Router>
 			<div style={{height: '100%'}}>
-				<Route exact path="/" component={App}/>
-				<Route path="/rooms/:roomId" component={App}/>
+				<Route path="/" render={renderRoot}/>
 			</div>
 		</Router>,
 		container
